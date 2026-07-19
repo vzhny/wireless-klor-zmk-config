@@ -10,7 +10,11 @@
 	chosen {
 		zephyr,display = &oled;
 		zmk,kscan = &kscan0;
-		zmk,matrix_transform = &default_transform;
+		/* zmk,matrix_transform intentionally not set here — klor.dtsi sets
+		 * zmk,physical-layout instead (required for ZMK Studio), which carries
+		 * its own `transform` reference. Setting both makes ZMK ignore the
+		 * physical layout and fall back to the raw transform, which then fails
+		 * Studio's build-time check. */
 	};
 
 	kscan0: kscan {
