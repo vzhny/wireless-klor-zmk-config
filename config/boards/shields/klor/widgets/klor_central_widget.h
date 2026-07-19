@@ -14,13 +14,13 @@
 struct klor_central_widget {
     sys_snode_t node;
     lv_obj_t *obj;
-    lv_obj_t *bt_icon;
-    struct klor_battery_bar battery;
+    struct klor_badge bt_badge;
+    struct klor_badge bat_badge;
+    struct klor_badge pct_badge;
+    struct klor_badge mod_badges[4];
+    lv_obj_t *face_icon;
     lv_obj_t *layer_label;
-    lv_obj_t *os_icon;
-    lv_obj_t *lock_num;
-    lv_obj_t *lock_caps;
-    lv_obj_t *lock_scroll;
+    struct klor_badge layer_badges[9];
 };
 
 int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *parent);

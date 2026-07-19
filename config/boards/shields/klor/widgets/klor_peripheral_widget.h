@@ -14,9 +14,17 @@
 struct klor_peripheral_widget {
     sys_snode_t node;
     lv_obj_t *obj;
-    lv_obj_t *wifi_icon;
-    struct klor_battery_bar battery;
+    struct klor_badge link_badge;
+    struct klor_badge bat_badge;
+    struct klor_badge pct_badge;
+    lv_obj_t *face_icon;
+    struct klor_badge mod_badges[4];
 };
 
 int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t *parent);
 lv_obj_t *klor_peripheral_widget_obj(struct klor_peripheral_widget *widget);
+
+/* Called from klor_modifier_sync_peripheral.c's GATT write handler (BT RX
+ * thread context, not the display thread -- this queues a redraw on the
+ * display work queue rather than touching LVGL objects directly). */
+void klor_peripheral_widget_update_r_mods(uint8_t r_mods);

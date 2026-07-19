@@ -4,20 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* Recreates the QMK KLOR "master side" OLED screen (geist/default keymaps,
- * render_os_lock_status() + layer name) pixel-for-pixel using the same
- * glyphs from lib/glcdfont.c: layer name, OS mode icon (win/mac), the KLOR
- * face icon, and num/caps/scroll lock icons, separated by rule lines in the
- * same grouping/order as the original.
+/* KLOR "master side" (left/central) OLED screen.
  *
- * QMK's dynamic-macro record/stop/play icon and the audio/haptic-enabled
- * icons are intentionally omitted -- ZMK has no equivalent runtime macro
- * recording feature, and this build has no audio or haptic driver.
- *
- * The top status strip (BT indicator + battery/%) is not part of the QMK
- * display -- that build is wired/USB-only. Added here in the same style as
- * wireless-corne-zmk-config's status strip (glyph left, battery+% right),
- * since this KLOR build is BLE and both halves are battery-powered.
+ * Layer name (monospace) + a 1-9 active-layer badge row recreate what QMK's
+ * klor.c showed (current layer, at a glance); everything else here (BT/BAT/%
+ * status strip, live modifier badges, layer-number badges) is new, styled to
+ * match wireless-corne-zmk-config's status strip and this build's badge
+ * widget (klor_widgets_util.c) rather than reusing any bitmap glyphs.
  */
 
 #include <string.h>
@@ -29,55 +22,69 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/display.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/layer_state_changed.h>
-#include <zmk/events/hid_indicators_changed.h>
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/ble_active_profile_changed.h>
-#include <zmk/hid_indicators.h>
+#include <zmk/events/keycode_state_changed.h>
 #include <zmk/keymap.h>
 #include <zmk/battery.h>
 #include <zmk/ble.h>
+#include <zmk/usb.h>
+#include <zmk/hid.h>
 
 #include "klor_central_widget.h"
 #include "klor_widgets_util.h"
 
 LV_IMG_DECLARE(klor_face_icon);
-LV_IMG_DECLARE(klor_os_mac_icon);
-LV_IMG_DECLARE(klor_os_win_icon);
-LV_IMG_DECLARE(klor_lock_num_icon);
-LV_IMG_DECLARE(klor_lock_caps_icon);
-LV_IMG_DECLARE(klor_lock_scroll_icon);
-LV_IMG_DECLARE(klor_bt_icon);
 
 /* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
 #define KLOR_MAC_LAYER_A 1
 #define KLOR_MAC_LAYER_B 3
 
-/* Standard USB HID keyboard LED report bit order */
-#define KLOR_LED_NUM_LOCK BIT(0)
-#define KLOR_LED_CAPS_LOCK BIT(1)
-#define KLOR_LED_SCROLL_LOCK BIT(2)
+/* Standard HID modifier byte: bit0=LCtrl,bit1=LShift,bit2=LAlt,bit3=LGui */
+#define MOD_LCTRL BIT(0)
+#define MOD_LSHIFT BIT(1)
+#define MOD_LALT BIT(2)
+#define MOD_LGUI BIT(3)
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
 struct klor_central_state {
     const char *layer_label;
+    int active_layer;
     bool mac_mode;
-    zmk_hid_indicators_t indicators;
     uint8_t battery_level;
+    bool charging;
     bool bt_connected;
+    uint32_t mods;
 };
+
+/* Left-side modifier slot order, matching wireless-corne-zmk-config's
+ * render_mod_canvas(): Win = SFT,CTL,GUI,ALT / Mac = SFT,CMD,CTL,OPT */
+static void mod_slot(bool mac_mode, int slot, const char **text, uint32_t *bit) {
+    static const char *const win_text[4] = {"SFT", "CTL", "GUI", "ALT"};
+    static const uint32_t win_bit[4] = {MOD_LSHIFT, MOD_LCTRL, MOD_LGUI, MOD_LALT};
+    static const char *const mac_text[4] = {"SFT", "CMD", "CTL", "OPT"};
+    static const uint32_t mac_bit[4] = {MOD_LSHIFT, MOD_LGUI, MOD_LCTRL, MOD_LALT};
+
+    if (mac_mode) {
+        *text = mac_text[slot];
+        *bit = mac_bit[slot];
+    } else {
+        *text = win_text[slot];
+        *bit = win_bit[slot];
+    }
+}
 
 static void klor_central_render(struct klor_central_state state) {
     struct klor_central_widget *widget;
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        if (state.bt_connected) {
-            lv_obj_clear_flag(widget->bt_icon, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(widget->bt_icon, LV_OBJ_FLAG_HIDDEN);
-        }
+        klor_badge_set_active(&widget->bt_badge, state.bt_connected);
 
-        klor_battery_bar_update(&widget->battery, state.battery_level);
+        klor_badge_set_text(&widget->bat_badge, state.charging ? "CHG" : "BAT");
+        char pct_buf[6];
+        snprintf(pct_buf, sizeof(pct_buf), "%d%%", state.battery_level);
+        klor_badge_set_text(&widget->pct_badge, pct_buf);
 
         if (state.layer_label != NULL && strlen(state.layer_label) > 0) {
             lv_label_set_text(widget->layer_label, state.layer_label);
@@ -85,28 +92,16 @@ static void klor_central_render(struct klor_central_state state) {
             lv_label_set_text(widget->layer_label, "");
         }
 
-        lv_img_set_src(widget->os_icon, state.mac_mode ? &klor_os_mac_icon : &klor_os_win_icon);
-
-        /* QMK shows a blank placeholder glyph in place of an inactive lock
-         * icon, keeping its grid slot -- since these are absolute-positioned,
-         * simply hiding/showing the icon in place has the same visual
-         * effect. */
-        if (state.indicators & KLOR_LED_NUM_LOCK) {
-            lv_obj_clear_flag(widget->lock_num, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(widget->lock_num, LV_OBJ_FLAG_HIDDEN);
+        for (int i = 0; i < 4; i++) {
+            const char *text;
+            uint32_t bit;
+            mod_slot(state.mac_mode, i, &text, &bit);
+            klor_badge_set_text(&widget->mod_badges[i], text);
+            klor_badge_set_active(&widget->mod_badges[i], (state.mods & bit) != 0);
         }
 
-        if (state.indicators & KLOR_LED_CAPS_LOCK) {
-            lv_obj_clear_flag(widget->lock_caps, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(widget->lock_caps, LV_OBJ_FLAG_HIDDEN);
-        }
-
-        if (state.indicators & KLOR_LED_SCROLL_LOCK) {
-            lv_obj_clear_flag(widget->lock_scroll, LV_OBJ_FLAG_HIDDEN);
-        } else {
-            lv_obj_add_flag(widget->lock_scroll, LV_OBJ_FLAG_HIDDEN);
+        for (int i = 0; i < 9; i++) {
+            klor_badge_set_active(&widget->layer_badges[i], state.active_layer == i);
         }
     }
 }
@@ -116,20 +111,22 @@ static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) 
 
     return (struct klor_central_state){
         .layer_label = zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(index)),
+        .active_layer = index,
         .mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
                     zmk_keymap_layer_active(KLOR_MAC_LAYER_B),
-        .indicators = zmk_hid_indicators_get_current_profile(),
         .battery_level = zmk_battery_state_of_charge(),
+        .charging = zmk_usb_is_powered(),
         .bt_connected = zmk_ble_active_profile_is_connected(),
+        .mods = zmk_hid_get_explicit_mods(),
     };
 }
 
 ZMK_DISPLAY_WIDGET_LISTENER(widget_klor_central, struct klor_central_state,
                             klor_central_render, klor_central_get_state)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_layer_state_changed)
-ZMK_SUBSCRIPTION(widget_klor_central, zmk_hid_indicators_changed)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_battery_state_changed)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed)
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_keycode_state_changed)
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
@@ -148,43 +145,47 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    /* Status strip -- BT indicator top-left, battery+% top-right */
-    widget->bt_icon = lv_img_create(widget->obj);
-    lv_img_set_src(widget->bt_icon, &klor_bt_icon);
-    lv_obj_align(widget->bt_icon, LV_ALIGN_TOP_LEFT, 0, 1);
+    /* Status strip -- BT badge top-left, BAT/CHG + % badges top-right */
+    klor_badge_create(&widget->bt_badge, widget->obj, "BT");
+    lv_obj_align(widget->bt_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
-    klor_battery_bar_create(&widget->battery, widget->obj, 78, 3);
+    lv_obj_t *status_row =
+        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
+    lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
+    klor_badge_create(&widget->bat_badge, status_row, "BAT");
+    klor_badge_create(&widget->pct_badge, status_row, "100%");
 
-    /* Layer name -- row 0 */
+    /* Layer name (monospace) -- row 0 */
     widget->layer_label = lv_label_create(widget->obj);
+    lv_obj_set_style_text_font(widget->layer_label, &lv_font_unscii_8, LV_PART_MAIN);
     lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 16);
 
     /* Rule -- row 1 */
     klor_rule(widget->obj, 128, 0, 27);
 
-    /* OS icon (left) + KLOR face icon (right) -- rows 2-3 */
-    widget->os_icon = lv_img_create(widget->obj);
-    lv_obj_align(widget->os_icon, LV_ALIGN_TOP_LEFT, 0, 31);
+    /* Modifier badges (left) + KLOR face icon (right) -- row 2 */
+    lv_obj_t *mod_row =
+        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
+    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 31);
+    for (int i = 0; i < 4; i++) {
+        klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
+    }
 
-    lv_obj_t *face_icon = lv_img_create(widget->obj);
-    lv_img_set_src(face_icon, &klor_face_icon);
-    lv_obj_align(face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
+    widget->face_icon = lv_img_create(widget->obj);
+    lv_img_set_src(widget->face_icon, &klor_face_icon);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
 
-    /* Rule -- row 4 */
+    /* Rule -- row 3 */
     klor_rule(widget->obj, 128, 0, 49);
 
-    /* Num/Caps/Scroll lock icons -- row 5 */
-    widget->lock_num = lv_img_create(widget->obj);
-    lv_img_set_src(widget->lock_num, &klor_lock_num_icon);
-    lv_obj_align(widget->lock_num, LV_ALIGN_TOP_LEFT, 0, 53);
-
-    widget->lock_caps = lv_img_create(widget->obj);
-    lv_img_set_src(widget->lock_caps, &klor_lock_caps_icon);
-    lv_obj_align(widget->lock_caps, LV_ALIGN_TOP_LEFT, 14, 53);
-
-    widget->lock_scroll = lv_img_create(widget->obj);
-    lv_img_set_src(widget->lock_scroll, &klor_lock_scroll_icon);
-    lv_obj_align(widget->lock_scroll, LV_ALIGN_TOP_LEFT, 28, 53);
+    /* Layer number badges 1-9 -- row 4, replaces the old lock-key row */
+    lv_obj_t *layer_row = klor_badge_row_create(widget->obj, 128, 11, LV_FLEX_ALIGN_START);
+    lv_obj_align(layer_row, LV_ALIGN_TOP_LEFT, 0, 53);
+    for (int i = 0; i < 9; i++) {
+        char buf[2];
+        snprintf(buf, sizeof(buf), "%d", i + 1);
+        klor_badge_create(&widget->layer_badges[i], layer_row, buf);
+    }
 
     sys_slist_append(&widgets, &widget->node);
 
