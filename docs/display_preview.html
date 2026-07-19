@@ -55,6 +55,7 @@ function central(o){
   var battLevel = o.batt===undefined ? 75 : o.batt;
   var charging = o.charging || false;
   var btConnected = o.bt===undefined ? true : o.bt;
+  var profile = o.profile===undefined ? 0 : o.profile;
   var activeLayer = o.activeLayer===undefined ? 0 : o.activeLayer;
   var held = o.held || [];
 
@@ -66,7 +67,7 @@ function central(o){
   }
 
   return '<div class="display"><div class="di">'
-    + '<div class="row" style="top:2px;left:2px;">'+badge('BT', btConnected)+'</div>'
+    + '<div class="row" style="top:2px;left:2px;">'+badge('BT', btConnected)+badge(btConnected?(''+profile):'X', btConnected)+'</div>'
     + '<div class="row right" style="top:2px;right:2px;">'+badge(charging?'CHG':'BAT',false)+pctBadge(battLevel)+'</div>'
     + '<div class="layer" style="top:32px;">'+layer+'</div>'
     + '<div class="rule" style="top:54px;"></div>'
@@ -104,7 +105,7 @@ function row(lbl, html){
 var left = [
   row('Qwerty (Win)\nBT connected, 75%\nbase layer, no mods held', central({layer:'Qwerty (Win)', batt:75, bt:true, activeLayer:0})),
   row('Qwerty (Mac)\nBT connected, 90%\nlayer 2, Shift+Cmd held', central({layer:'Qwerty (Mac)', isMac:true, batt:90, bt:true, activeLayer:1, held:['s','g']})),
-  row('Colemak-DH (Win)\nBT connected, 60%\nlayer 3, Ctrl held', central({layer:'Colemak-DH (Win)', batt:60, bt:true, activeLayer:2, held:['c']})),
+  row('Colemak-DH (Win)\nBT profile 2, 60%\nlayer 3, Ctrl held', central({layer:'Colemak-DH (Win)', batt:60, bt:true, profile:2, activeLayer:2, held:['c']})),
   row('Numbers\nBT connected, 50%\nlayer 5', central({layer:'Numbers', batt:50, bt:true, activeLayer:4})),
   row('Admin\nBT disconnected\nlayer 8, 25%', central({layer:'Admin', batt:25, bt:false, activeLayer:7})),
   row('Function Keys\nCharging, 45%\nlayer 9', central({layer:'Function Keys', batt:45, charging:true, activeLayer:8})),
