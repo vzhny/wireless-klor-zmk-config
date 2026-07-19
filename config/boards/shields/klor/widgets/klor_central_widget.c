@@ -14,9 +14,10 @@
  * icons are intentionally omitted -- ZMK has no equivalent runtime macro
  * recording feature, and this build has no audio or haptic driver.
  *
- * Battery and BT/output status (bottom row) are not part of the QMK
- * display -- that build is wired/USB-only. Added here using ZMK's own
- * built-in widgets, since this KLOR build is BLE.
+ * The top status strip (BT indicator + battery/%) is not part of the QMK
+ * display -- that build is wired/USB-only. Added here in the same style as
+ * wireless-corne-zmk-config's status strip (glyph left, battery+% right),
+ * since this KLOR build is BLE and both halves are battery-powered.
  */
 
 #include <string.h>
@@ -26,15 +27,18 @@
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include <zmk/display.h>
-#include <zmk/display/widgets/battery_status.h>
-#include <zmk/display/widgets/output_status.h>
 #include <zmk/event_manager.h>
 #include <zmk/events/layer_state_changed.h>
 #include <zmk/events/hid_indicators_changed.h>
+#include <zmk/events/battery_state_changed.h>
+#include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/hid_indicators.h>
 #include <zmk/keymap.h>
+#include <zmk/battery.h>
+#include <zmk/ble.h>
 
 #include "klor_central_widget.h"
+#include "klor_widgets_util.h"
 
 LV_IMG_DECLARE(klor_face_icon);
 LV_IMG_DECLARE(klor_os_mac_icon);
@@ -42,6 +46,7 @@ LV_IMG_DECLARE(klor_os_win_icon);
 LV_IMG_DECLARE(klor_lock_num_icon);
 LV_IMG_DECLARE(klor_lock_caps_icon);
 LV_IMG_DECLARE(klor_lock_scroll_icon);
+LV_IMG_DECLARE(klor_bt_icon);
 
 /* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
 #define KLOR_MAC_LAYER_A 1
@@ -58,12 +63,22 @@ struct klor_central_state {
     const char *layer_label;
     bool mac_mode;
     zmk_hid_indicators_t indicators;
+    uint8_t battery_level;
+    bool bt_connected;
 };
 
 static void klor_central_render(struct klor_central_state state) {
     struct klor_central_widget *widget;
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
+        if (state.bt_connected) {
+            lv_obj_clear_flag(widget->bt_icon, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(widget->bt_icon, LV_OBJ_FLAG_HIDDEN);
+        }
+
+        klor_battery_bar_update(&widget->battery, state.battery_level);
+
         if (state.layer_label != NULL && strlen(state.layer_label) > 0) {
             lv_label_set_text(widget->layer_label, state.layer_label);
         } else {
@@ -104,6 +119,8 @@ static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) 
         .mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
                     zmk_keymap_layer_active(KLOR_MAC_LAYER_B),
         .indicators = zmk_hid_indicators_get_current_profile(),
+        .battery_level = zmk_battery_state_of_charge(),
+        .bt_connected = zmk_ble_active_profile_is_connected(),
     };
 }
 
@@ -111,6 +128,8 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_klor_central, struct klor_central_state,
                             klor_central_render, klor_central_get_state)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_layer_state_changed)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_hid_indicators_changed)
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_battery_state_changed)
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed)
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
@@ -129,46 +148,43 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
+    /* Status strip -- BT indicator top-left, battery+% top-right */
+    widget->bt_icon = lv_img_create(widget->obj);
+    lv_img_set_src(widget->bt_icon, &klor_bt_icon);
+    lv_obj_align(widget->bt_icon, LV_ALIGN_TOP_LEFT, 0, 1);
+
+    klor_battery_bar_create(&widget->battery, widget->obj, 78, 3);
+
     /* Layer name -- row 0 */
     widget->layer_label = lv_label_create(widget->obj);
-    lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 16);
 
     /* Rule -- row 1 */
-    klor_rule(widget->obj, 128, 0, 11);
+    klor_rule(widget->obj, 128, 0, 27);
 
     /* OS icon (left) + KLOR face icon (right) -- rows 2-3 */
     widget->os_icon = lv_img_create(widget->obj);
-    lv_obj_align(widget->os_icon, LV_ALIGN_TOP_LEFT, 0, 15);
+    lv_obj_align(widget->os_icon, LV_ALIGN_TOP_LEFT, 0, 31);
 
     lv_obj_t *face_icon = lv_img_create(widget->obj);
     lv_img_set_src(face_icon, &klor_face_icon);
-    lv_obj_align(face_icon, LV_ALIGN_TOP_RIGHT, 0, 15);
+    lv_obj_align(face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
 
     /* Rule -- row 4 */
-    klor_rule(widget->obj, 128, 0, 33);
+    klor_rule(widget->obj, 128, 0, 49);
 
     /* Num/Caps/Scroll lock icons -- row 5 */
     widget->lock_num = lv_img_create(widget->obj);
     lv_img_set_src(widget->lock_num, &klor_lock_num_icon);
-    lv_obj_align(widget->lock_num, LV_ALIGN_TOP_LEFT, 0, 37);
+    lv_obj_align(widget->lock_num, LV_ALIGN_TOP_LEFT, 0, 53);
 
     widget->lock_caps = lv_img_create(widget->obj);
     lv_img_set_src(widget->lock_caps, &klor_lock_caps_icon);
-    lv_obj_align(widget->lock_caps, LV_ALIGN_TOP_LEFT, 14, 37);
+    lv_obj_align(widget->lock_caps, LV_ALIGN_TOP_LEFT, 14, 53);
 
     widget->lock_scroll = lv_img_create(widget->obj);
     lv_img_set_src(widget->lock_scroll, &klor_lock_scroll_icon);
-    lv_obj_align(widget->lock_scroll, LV_ALIGN_TOP_LEFT, 28, 37);
-
-    /* Battery + output status -- bottom row (not present in QMK's wired-only
-     * display; added since this build is BLE) */
-    static struct zmk_widget_battery_status battery_widget;
-    zmk_widget_battery_status_init(&battery_widget, widget->obj);
-    lv_obj_align(zmk_widget_battery_status_obj(&battery_widget), LV_ALIGN_BOTTOM_LEFT, 0, 0);
-
-    static struct zmk_widget_output_status output_widget;
-    zmk_widget_output_status_init(&output_widget, widget->obj);
-    lv_obj_align(zmk_widget_output_status_obj(&output_widget), LV_ALIGN_BOTTOM_RIGHT, 0, 0);
+    lv_obj_align(widget->lock_scroll, LV_ALIGN_TOP_LEFT, 28, 53);
 
     sys_slist_append(&widgets, &widget->node);
 

@@ -9,8 +9,13 @@
 #include <lvgl.h>
 #include <zephyr/kernel.h>
 
+#include "klor_widgets_util.h"
+
 struct klor_peripheral_widget {
+    sys_snode_t node;
     lv_obj_t *obj;
+    lv_obj_t *wifi_icon;
+    struct klor_battery_bar battery;
 };
 
 int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t *parent);
