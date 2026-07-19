@@ -1,52 +1,51 @@
 <title>KLOR &mdash; OLED Display States</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{--bg:#1a1917;--display-bg:#000;--display-fg:#fff;--div:#333;--lbl:#6a6760;--title:#ccc;--mono:ui-monospace,'SF Mono','Courier New',monospace;--batt-low:#e05555;}
-body{background:var(--bg);font-family:var(--mono);padding:32px 28px;min-height:100vh;}
+:root{--bg:#1a1917;--display-bg:#000;--display-fg:#fff;--lbl:#6a6760;--title:#ccc;--mono:ui-monospace,'SF Mono','Courier New',monospace;--sans:-apple-system,'Segoe UI',sans-serif;}
+body{background:var(--bg);font-family:var(--sans);padding:32px 28px;min-height:100vh;}
 h1{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--title);margin-bottom:5px;}
 .sub{font-size:10px;color:var(--lbl);margin-bottom:26px;letter-spacing:.04em;}
 .grid{display:flex;gap:48px;flex-wrap:wrap;align-items:flex-start;}
 .col-title{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--lbl);margin-bottom:12px;}
 .states-col{display:flex;flex-direction:column;gap:22px;}
 .sw{display:flex;align-items:flex-start;gap:12px;}
-.sl{font-size:9px;color:var(--lbl);width:120px;padding-top:2px;line-height:1.7;flex-shrink:0;}
+.sl{font-size:9px;color:var(--lbl);width:130px;padding-top:2px;line-height:1.7;flex-shrink:0;}
 .display{width:288px;height:152px;background:#0a0a0a;border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.8);flex-shrink:0;padding:8px;}
-.di{width:256px;height:128px;background:var(--display-bg);}
-.di svg{width:100%;height:100%;display:block;}
-.tx{fill:var(--display-fg);font-family:var(--mono);}
+.di{width:256px;height:128px;background:var(--display-bg);position:relative;font-size:0;}
+.row{position:absolute;left:0;right:0;display:flex;align-items:center;gap:4px;padding:0 2px;}
+.row.right{justify-content:flex-end;}
+.badge{display:inline-flex;align-items:center;justify-content:center;background:#000;color:#fff;font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.02em;padding:1px 5px;line-height:1.5;}
+.badge.on{background:#fff;color:#000;}
+.badge.pct{background:#000;color:#fff;}
+.rule{position:absolute;left:0;right:0;height:2px;background:#fff;}
+.layer{position:absolute;left:4px;color:#fff;font-family:var(--mono);font-size:15px;letter-spacing:.02em;}
+.face{position:absolute;}
+.face svg{display:block;width:60px;height:32px;}
 </style>
 <h1>KLOR &mdash; OLED Display States</h1>
-<p class="sub">128&times;64 SSD1306 &middot; 2&times; scale &middot; recreated from QMK klor.c, BT/WiFi/battery added for BLE</p>
+<p class="sub">128&times;64 SSD1306 &middot; 2&times; scale &middot; badge-style status indicators, monospace layer name</p>
 <div class="grid" id="root"></div>
 <script>
-var ICON_KLOR_FACE_ICON = '<rect x="8" y="0" width="14" height="1" fill="currentColor"/><rect x="7" y="1" width="16" height="1" fill="currentColor"/><rect x="7" y="2" width="16" height="1" fill="currentColor"/><rect x="7" y="3" width="16" height="1" fill="currentColor"/><rect x="3" y="4" width="7" height="1" fill="currentColor"/><rect x="12" y="4" width="6" height="1" fill="currentColor"/><rect x="20" y="4" width="7" height="1" fill="currentColor"/><rect x="2" y="5" width="7" height="1" fill="currentColor"/><rect x="13" y="5" width="4" height="1" fill="currentColor"/><rect x="21" y="5" width="7" height="1" fill="currentColor"/><rect x="2" y="6" width="7" height="1" fill="currentColor"/><rect x="13" y="6" width="4" height="1" fill="currentColor"/><rect x="21" y="6" width="7" height="1" fill="currentColor"/><rect x="2" y="7" width="8" height="1" fill="currentColor"/><rect x="12" y="7" width="6" height="1" fill="currentColor"/><rect x="20" y="7" width="8" height="1" fill="currentColor"/><rect x="2" y="8" width="26" height="1" fill="currentColor"/><rect x="2" y="9" width="11" height="1" fill="currentColor"/><rect x="17" y="9" width="11" height="1" fill="currentColor"/><rect x="2" y="10" width="11" height="1" fill="currentColor"/><rect x="17" y="10" width="11" height="1" fill="currentColor"/><rect x="3" y="11" width="9" height="1" fill="currentColor"/><rect x="14" y="11" width="2" height="1" fill="currentColor"/><rect x="18" y="11" width="9" height="1" fill="currentColor"/><rect x="7" y="12" width="5" height="1" fill="currentColor"/><rect x="14" y="12" width="2" height="1" fill="currentColor"/><rect x="18" y="12" width="5" height="1" fill="currentColor"/><rect x="7" y="13" width="4" height="1" fill="currentColor"/><rect x="13" y="13" width="4" height="1" fill="currentColor"/><rect x="19" y="13" width="4" height="1" fill="currentColor"/><rect x="7" y="14" width="4" height="1" fill="currentColor"/><rect x="13" y="14" width="4" height="1" fill="currentColor"/><rect x="19" y="14" width="4" height="1" fill="currentColor"/><rect x="7" y="15" width="16" height="1" fill="currentColor"/>';
-var ICON_KLOR_OS_MAC_ICON = '<rect x="7" y="0" width="2" height="1" fill="currentColor"/><rect x="6" y="1" width="3" height="1" fill="currentColor"/><rect x="6" y="2" width="2" height="1" fill="currentColor"/><rect x="2" y="4" width="3" height="1" fill="currentColor"/><rect x="7" y="4" width="3" height="1" fill="currentColor"/><rect x="1" y="5" width="10" height="1" fill="currentColor"/><rect x="0" y="6" width="11" height="1" fill="currentColor"/><rect x="0" y="7" width="10" height="1" fill="currentColor"/><rect x="0" y="8" width="9" height="1" fill="currentColor"/><rect x="0" y="9" width="9" height="1" fill="currentColor"/><rect x="0" y="10" width="9" height="1" fill="currentColor"/><rect x="0" y="11" width="10" height="1" fill="currentColor"/><rect x="1" y="12" width="10" height="1" fill="currentColor"/><rect x="2" y="13" width="8" height="1" fill="currentColor"/><rect x="3" y="14" width="2" height="1" fill="currentColor"/><rect x="7" y="14" width="2" height="1" fill="currentColor"/>';
-var ICON_KLOR_OS_WIN_ICON = '<rect x="0" y="2" width="5" height="1" fill="currentColor"/><rect x="6" y="2" width="5" height="1" fill="currentColor"/><rect x="0" y="3" width="5" height="1" fill="currentColor"/><rect x="6" y="3" width="5" height="1" fill="currentColor"/><rect x="0" y="4" width="5" height="1" fill="currentColor"/><rect x="6" y="4" width="5" height="1" fill="currentColor"/><rect x="0" y="5" width="5" height="1" fill="currentColor"/><rect x="6" y="5" width="5" height="1" fill="currentColor"/><rect x="0" y="6" width="5" height="1" fill="currentColor"/><rect x="6" y="6" width="5" height="1" fill="currentColor"/><rect x="0" y="8" width="5" height="1" fill="currentColor"/><rect x="6" y="8" width="5" height="1" fill="currentColor"/><rect x="0" y="9" width="5" height="1" fill="currentColor"/><rect x="6" y="9" width="5" height="1" fill="currentColor"/><rect x="0" y="10" width="5" height="1" fill="currentColor"/><rect x="6" y="10" width="5" height="1" fill="currentColor"/><rect x="0" y="11" width="5" height="1" fill="currentColor"/><rect x="6" y="11" width="5" height="1" fill="currentColor"/><rect x="0" y="12" width="5" height="1" fill="currentColor"/><rect x="6" y="12" width="5" height="1" fill="currentColor"/>';
-var ICON_KLOR_LOCK_NUM_ICON = '<rect x="0" y="0" width="11" height="1" fill="currentColor"/><rect x="0" y="1" width="1" height="1" fill="currentColor"/><rect x="2" y="1" width="2" height="1" fill="currentColor"/><rect x="5" y="1" width="1" height="1" fill="currentColor"/><rect x="7" y="1" width="4" height="1" fill="currentColor"/><rect x="0" y="2" width="1" height="1" fill="currentColor"/><rect x="3" y="2" width="1" height="1" fill="currentColor"/><rect x="5" y="2" width="1" height="1" fill="currentColor"/><rect x="7" y="2" width="4" height="1" fill="currentColor"/><rect x="0" y="3" width="1" height="1" fill="currentColor"/><rect x="2" y="3" width="1" height="1" fill="currentColor"/><rect x="5" y="3" width="1" height="1" fill="currentColor"/><rect x="7" y="3" width="4" height="1" fill="currentColor"/><rect x="0" y="4" width="1" height="1" fill="currentColor"/><rect x="2" y="4" width="2" height="1" fill="currentColor"/><rect x="5" y="4" width="1" height="1" fill="currentColor"/><rect x="7" y="4" width="4" height="1" fill="currentColor"/><rect x="0" y="5" width="1" height="1" fill="currentColor"/><rect x="2" y="5" width="2" height="1" fill="currentColor"/><rect x="5" y="5" width="1" height="1" fill="currentColor"/><rect x="10" y="5" width="1" height="1" fill="currentColor"/><rect x="0" y="6" width="11" height="1" fill="currentColor"/>';
-var ICON_KLOR_LOCK_CAPS_ICON = '<rect x="0" y="0" width="11" height="1" fill="currentColor"/><rect x="0" y="1" width="1" height="1" fill="currentColor"/><rect x="5" y="1" width="1" height="1" fill="currentColor"/><rect x="7" y="1" width="4" height="1" fill="currentColor"/><rect x="0" y="2" width="1" height="1" fill="currentColor"/><rect x="2" y="2" width="4" height="1" fill="currentColor"/><rect x="7" y="2" width="4" height="1" fill="currentColor"/><rect x="0" y="3" width="1" height="1" fill="currentColor"/><rect x="2" y="3" width="4" height="1" fill="currentColor"/><rect x="7" y="3" width="4" height="1" fill="currentColor"/><rect x="0" y="4" width="1" height="1" fill="currentColor"/><rect x="2" y="4" width="4" height="1" fill="currentColor"/><rect x="7" y="4" width="4" height="1" fill="currentColor"/><rect x="0" y="5" width="1" height="1" fill="currentColor"/><rect x="5" y="5" width="1" height="1" fill="currentColor"/><rect x="10" y="5" width="1" height="1" fill="currentColor"/><rect x="0" y="6" width="11" height="1" fill="currentColor"/>';
-var ICON_KLOR_LOCK_SCROLL_ICON = '<rect x="0" y="0" width="11" height="1" fill="currentColor"/><rect x="0" y="1" width="1" height="1" fill="currentColor"/><rect x="5" y="1" width="1" height="1" fill="currentColor"/><rect x="7" y="1" width="4" height="1" fill="currentColor"/><rect x="0" y="2" width="1" height="1" fill="currentColor"/><rect x="2" y="2" width="4" height="1" fill="currentColor"/><rect x="7" y="2" width="4" height="1" fill="currentColor"/><rect x="0" y="3" width="1" height="1" fill="currentColor"/><rect x="5" y="3" width="1" height="1" fill="currentColor"/><rect x="7" y="3" width="4" height="1" fill="currentColor"/><rect x="0" y="4" width="4" height="1" fill="currentColor"/><rect x="5" y="4" width="1" height="1" fill="currentColor"/><rect x="7" y="4" width="4" height="1" fill="currentColor"/><rect x="0" y="5" width="1" height="1" fill="currentColor"/><rect x="5" y="5" width="1" height="1" fill="currentColor"/><rect x="10" y="5" width="1" height="1" fill="currentColor"/><rect x="0" y="6" width="11" height="1" fill="currentColor"/>';
-var ICON_KLOR_BT_ICON = '<rect x="4" y="1" width="1" height="1" fill="currentColor"/><rect x="4" y="2" width="1" height="1" fill="currentColor"/><rect x="6" y="2" width="1" height="1" fill="currentColor"/><rect x="4" y="3" width="1" height="1" fill="currentColor"/><rect x="7" y="3" width="1" height="1" fill="currentColor"/><rect x="4" y="4" width="1" height="1" fill="currentColor"/><rect x="8" y="4" width="1" height="1" fill="currentColor"/><rect x="4" y="5" width="1" height="1" fill="currentColor"/><rect x="7" y="5" width="1" height="1" fill="currentColor"/><rect x="4" y="6" width="1" height="1" fill="currentColor"/><rect x="6" y="6" width="1" height="1" fill="currentColor"/><rect x="4" y="7" width="1" height="1" fill="currentColor"/><rect x="6" y="7" width="1" height="1" fill="currentColor"/><rect x="4" y="8" width="1" height="1" fill="currentColor"/><rect x="7" y="8" width="1" height="1" fill="currentColor"/><rect x="4" y="9" width="1" height="1" fill="currentColor"/><rect x="8" y="9" width="1" height="1" fill="currentColor"/><rect x="4" y="10" width="1" height="1" fill="currentColor"/><rect x="7" y="10" width="1" height="1" fill="currentColor"/><rect x="4" y="11" width="1" height="1" fill="currentColor"/><rect x="6" y="11" width="1" height="1" fill="currentColor"/><rect x="4" y="12" width="1" height="1" fill="currentColor"/>';
-var ICON_KLOR_WIFI_ICON = '<rect x="3" y="1" width="8" height="1" fill="currentColor"/><rect x="2" y="2" width="1" height="1" fill="currentColor"/><rect x="11" y="2" width="1" height="1" fill="currentColor"/><rect x="1" y="3" width="1" height="1" fill="currentColor"/><rect x="12" y="3" width="1" height="1" fill="currentColor"/><rect x="5" y="5" width="4" height="1" fill="currentColor"/><rect x="4" y="6" width="1" height="1" fill="currentColor"/><rect x="9" y="6" width="1" height="1" fill="currentColor"/><rect x="6" y="8" width="2" height="1" fill="currentColor"/>';
-var ICON_KLOR_FACE_FULL = '<rect x="36" y="0" width="56" height="1" fill="currentColor"/><rect x="36" y="1" width="56" height="1" fill="currentColor"/><rect x="36" y="2" width="56" height="1" fill="currentColor"/><rect x="36" y="3" width="56" height="1" fill="currentColor"/><rect x="32" y="4" width="64" height="1" fill="currentColor"/><rect x="32" y="5" width="64" height="1" fill="currentColor"/><rect x="32" y="6" width="64" height="1" fill="currentColor"/><rect x="32" y="7" width="64" height="1" fill="currentColor"/><rect x="32" y="8" width="64" height="1" fill="currentColor"/><rect x="32" y="9" width="64" height="1" fill="currentColor"/><rect x="32" y="10" width="64" height="1" fill="currentColor"/><rect x="32" y="11" width="64" height="1" fill="currentColor"/><rect x="32" y="12" width="64" height="1" fill="currentColor"/><rect x="32" y="13" width="64" height="1" fill="currentColor"/><rect x="32" y="14" width="64" height="1" fill="currentColor"/><rect x="32" y="15" width="64" height="1" fill="currentColor"/><rect x="16" y="16" width="28" height="1" fill="currentColor"/><rect x="52" y="16" width="24" height="1" fill="currentColor"/><rect x="84" y="16" width="28" height="1" fill="currentColor"/><rect x="16" y="17" width="28" height="1" fill="currentColor"/><rect x="52" y="17" width="24" height="1" fill="currentColor"/><rect x="84" y="17" width="28" height="1" fill="currentColor"/><rect x="16" y="18" width="28" height="1" fill="currentColor"/><rect x="52" y="18" width="24" height="1" fill="currentColor"/><rect x="84" y="18" width="28" height="1" fill="currentColor"/><rect x="16" y="19" width="28" height="1" fill="currentColor"/><rect x="52" y="19" width="24" height="1" fill="currentColor"/><rect x="84" y="19" width="28" height="1" fill="currentColor"/><rect x="12" y="20" width="28" height="1" fill="currentColor"/><rect x="56" y="20" width="16" height="1" fill="currentColor"/><rect x="88" y="20" width="28" height="1" fill="currentColor"/><rect x="12" y="21" width="28" height="1" fill="currentColor"/><rect x="56" y="21" width="16" height="1" fill="currentColor"/><rect x="88" y="21" width="28" height="1" fill="currentColor"/><rect x="12" y="22" width="28" height="1" fill="currentColor"/><rect x="56" y="22" width="16" height="1" fill="currentColor"/><rect x="88" y="22" width="28" height="1" fill="currentColor"/><rect x="12" y="23" width="28" height="1" fill="currentColor"/><rect x="56" y="23" width="16" height="1" fill="currentColor"/><rect x="88" y="23" width="28" height="1" fill="currentColor"/><rect x="12" y="24" width="28" height="1" fill="currentColor"/><rect x="56" y="24" width="16" height="1" fill="currentColor"/><rect x="88" y="24" width="28" height="1" fill="currentColor"/><rect x="12" y="25" width="28" height="1" fill="currentColor"/><rect x="56" y="25" width="16" height="1" fill="currentColor"/><rect x="88" y="25" width="28" height="1" fill="currentColor"/><rect x="12" y="26" width="28" height="1" fill="currentColor"/><rect x="56" y="26" width="16" height="1" fill="currentColor"/><rect x="88" y="26" width="28" height="1" fill="currentColor"/><rect x="12" y="27" width="28" height="1" fill="currentColor"/><rect x="56" y="27" width="16" height="1" fill="currentColor"/><rect x="88" y="27" width="28" height="1" fill="currentColor"/><rect x="12" y="28" width="32" height="1" fill="currentColor"/><rect x="52" y="28" width="24" height="1" fill="currentColor"/><rect x="84" y="28" width="32" height="1" fill="currentColor"/><rect x="12" y="29" width="32" height="1" fill="currentColor"/><rect x="52" y="29" width="24" height="1" fill="currentColor"/><rect x="84" y="29" width="32" height="1" fill="currentColor"/><rect x="12" y="30" width="32" height="1" fill="currentColor"/><rect x="52" y="30" width="24" height="1" fill="currentColor"/><rect x="84" y="30" width="32" height="1" fill="currentColor"/><rect x="12" y="31" width="32" height="1" fill="currentColor"/><rect x="52" y="31" width="24" height="1" fill="currentColor"/><rect x="84" y="31" width="32" height="1" fill="currentColor"/><rect x="12" y="32" width="104" height="1" fill="currentColor"/><rect x="12" y="33" width="104" height="1" fill="currentColor"/><rect x="12" y="34" width="104" height="1" fill="currentColor"/><rect x="12" y="35" width="104" height="1" fill="currentColor"/><rect x="12" y="36" width="44" height="1" fill="currentColor"/><rect x="72" y="36" width="44" height="1" fill="currentColor"/><rect x="12" y="37" width="44" height="1" fill="currentColor"/><rect x="72" y="37" width="44" height="1" fill="currentColor"/><rect x="12" y="38" width="44" height="1" fill="currentColor"/><rect x="72" y="38" width="44" height="1" fill="currentColor"/><rect x="12" y="39" width="44" height="1" fill="currentColor"/><rect x="72" y="39" width="44" height="1" fill="currentColor"/><rect x="12" y="40" width="44" height="1" fill="currentColor"/><rect x="72" y="40" width="44" height="1" fill="currentColor"/><rect x="12" y="41" width="44" height="1" fill="currentColor"/><rect x="72" y="41" width="44" height="1" fill="currentColor"/><rect x="12" y="42" width="44" height="1" fill="currentColor"/><rect x="72" y="42" width="44" height="1" fill="currentColor"/><rect x="12" y="43" width="44" height="1" fill="currentColor"/><rect x="72" y="43" width="44" height="1" fill="currentColor"/><rect x="16" y="44" width="36" height="1" fill="currentColor"/><rect x="60" y="44" width="8" height="1" fill="currentColor"/><rect x="76" y="44" width="36" height="1" fill="currentColor"/><rect x="16" y="45" width="36" height="1" fill="currentColor"/><rect x="60" y="45" width="8" height="1" fill="currentColor"/><rect x="76" y="45" width="36" height="1" fill="currentColor"/><rect x="16" y="46" width="36" height="1" fill="currentColor"/><rect x="60" y="46" width="8" height="1" fill="currentColor"/><rect x="76" y="46" width="36" height="1" fill="currentColor"/><rect x="16" y="47" width="36" height="1" fill="currentColor"/><rect x="60" y="47" width="8" height="1" fill="currentColor"/><rect x="76" y="47" width="36" height="1" fill="currentColor"/><rect x="32" y="48" width="20" height="1" fill="currentColor"/><rect x="60" y="48" width="8" height="1" fill="currentColor"/><rect x="76" y="48" width="20" height="1" fill="currentColor"/><rect x="32" y="49" width="20" height="1" fill="currentColor"/><rect x="60" y="49" width="8" height="1" fill="currentColor"/><rect x="76" y="49" width="20" height="1" fill="currentColor"/><rect x="32" y="50" width="20" height="1" fill="currentColor"/><rect x="60" y="50" width="8" height="1" fill="currentColor"/><rect x="76" y="50" width="20" height="1" fill="currentColor"/><rect x="32" y="51" width="20" height="1" fill="currentColor"/><rect x="60" y="51" width="8" height="1" fill="currentColor"/><rect x="76" y="51" width="20" height="1" fill="currentColor"/><rect x="32" y="52" width="16" height="1" fill="currentColor"/><rect x="56" y="52" width="16" height="1" fill="currentColor"/><rect x="80" y="52" width="16" height="1" fill="currentColor"/><rect x="32" y="53" width="16" height="1" fill="currentColor"/><rect x="56" y="53" width="16" height="1" fill="currentColor"/><rect x="80" y="53" width="16" height="1" fill="currentColor"/><rect x="32" y="54" width="16" height="1" fill="currentColor"/><rect x="56" y="54" width="16" height="1" fill="currentColor"/><rect x="80" y="54" width="16" height="1" fill="currentColor"/><rect x="32" y="55" width="16" height="1" fill="currentColor"/><rect x="56" y="55" width="16" height="1" fill="currentColor"/><rect x="80" y="55" width="16" height="1" fill="currentColor"/><rect x="32" y="56" width="16" height="1" fill="currentColor"/><rect x="56" y="56" width="16" height="1" fill="currentColor"/><rect x="80" y="56" width="16" height="1" fill="currentColor"/><rect x="32" y="57" width="16" height="1" fill="currentColor"/><rect x="56" y="57" width="16" height="1" fill="currentColor"/><rect x="80" y="57" width="16" height="1" fill="currentColor"/><rect x="32" y="58" width="16" height="1" fill="currentColor"/><rect x="56" y="58" width="16" height="1" fill="currentColor"/><rect x="80" y="58" width="16" height="1" fill="currentColor"/><rect x="32" y="59" width="16" height="1" fill="currentColor"/><rect x="56" y="59" width="16" height="1" fill="currentColor"/><rect x="80" y="59" width="16" height="1" fill="currentColor"/><rect x="32" y="60" width="64" height="1" fill="currentColor"/><rect x="32" y="61" width="64" height="1" fill="currentColor"/><rect x="32" y="62" width="64" height="1" fill="currentColor"/><rect x="32" y="63" width="64" height="1" fill="currentColor"/>';
+var FACE_SVG = '<svg viewBox="0 0 30 16" xmlns="http://www.w3.org/2000/svg" fill="#fff"><rect x="8" y="0" width="14" height="1" fill="currentColor"/><rect x="7" y="1" width="16" height="1" fill="currentColor"/><rect x="7" y="2" width="16" height="1" fill="currentColor"/><rect x="7" y="3" width="16" height="1" fill="currentColor"/><rect x="3" y="4" width="7" height="1" fill="currentColor"/><rect x="12" y="4" width="6" height="1" fill="currentColor"/><rect x="20" y="4" width="7" height="1" fill="currentColor"/><rect x="2" y="5" width="7" height="1" fill="currentColor"/><rect x="13" y="5" width="4" height="1" fill="currentColor"/><rect x="21" y="5" width="7" height="1" fill="currentColor"/><rect x="2" y="6" width="7" height="1" fill="currentColor"/><rect x="13" y="6" width="4" height="1" fill="currentColor"/><rect x="21" y="6" width="7" height="1" fill="currentColor"/><rect x="2" y="7" width="8" height="1" fill="currentColor"/><rect x="12" y="7" width="6" height="1" fill="currentColor"/><rect x="20" y="7" width="8" height="1" fill="currentColor"/><rect x="2" y="8" width="26" height="1" fill="currentColor"/><rect x="2" y="9" width="11" height="1" fill="currentColor"/><rect x="17" y="9" width="11" height="1" fill="currentColor"/><rect x="2" y="10" width="11" height="1" fill="currentColor"/><rect x="17" y="10" width="11" height="1" fill="currentColor"/><rect x="3" y="11" width="9" height="1" fill="currentColor"/><rect x="14" y="11" width="2" height="1" fill="currentColor"/><rect x="18" y="11" width="9" height="1" fill="currentColor"/><rect x="7" y="12" width="5" height="1" fill="currentColor"/><rect x="14" y="12" width="2" height="1" fill="currentColor"/><rect x="18" y="12" width="5" height="1" fill="currentColor"/><rect x="7" y="13" width="4" height="1" fill="currentColor"/><rect x="13" y="13" width="4" height="1" fill="currentColor"/><rect x="19" y="13" width="4" height="1" fill="currentColor"/><rect x="7" y="14" width="4" height="1" fill="currentColor"/><rect x="13" y="14" width="4" height="1" fill="currentColor"/><rect x="19" y="14" width="4" height="1" fill="currentColor"/><rect x="7" y="15" width="16" height="1" fill="currentColor"/></svg>';
 
-function g(x,y,body,opacity){
-  return '<g transform="translate('+x+','+y+')" opacity="'+(opacity===undefined?1:opacity)+'">'+body+'</g>';
+function badge(text, on){
+  return '<span class="badge'+(on?' on':'')+'">'+text+'</span>';
+}
+function pctBadge(pct){
+  return '<span class="badge pct">'+pct+'%</span>';
 }
 
-function battery(x,y,pct,fg){
-  var innerW=20, w=Math.max(0,Math.round(innerW*pct/100));
-  var low = pct<=20;
-  var fillColor = low ? 'var(--batt-low)' : (fg||'currentColor');
-  return '<g transform="translate('+x+','+y+')">'
-    + '<rect x="0" y="0" width="22" height="10" fill="none" stroke="currentColor" stroke-width="1"/>'
-    + '<rect x="1" y="1" width="'+w+'" height="8" fill="'+fillColor+'"/>'
-    + '<rect x="22" y="3" width="2" height="4" fill="currentColor"/>'
-    + '<text x="28" y="9" font-size="8" class="tx">'+pct+'%</text>'
-    + '</g>';
-}
+var WIN_MODS  = [['SFT','s'],['CTL','c'],['GUI','g'],['ALT','a']];
+var MAC_MODS  = [['SFT','s'],['CMD','g'],['CTL','c'],['OPT','a']];
+var WIN_MODS_R = [['ALT','a'],['GUI','g'],['CTL','c'],['SFT','s']];
+var MAC_MODS_R = [['OPT','a'],['CTL','c'],['CMD','g'],['SFT','s']];
 
-function rule(y){
-  return '<rect x="0" y="'+y+'" width="128" height="1" fill="currentColor"/>';
+function modRow(list, held){
+  var s='';
+  for (var i=0;i<list.length;i++){
+    s += badge(list[i][0], held.indexOf(list[i][1])!==-1);
+  }
+  return s;
 }
 
 /* ---- Central (primary) screen ---- */
@@ -54,42 +53,48 @@ function central(o){
   var layer = o.layer || 'Qwerty (Win)';
   var isMac = o.isMac || false;
   var battLevel = o.batt===undefined ? 75 : o.batt;
+  var charging = o.charging || false;
   var btConnected = o.bt===undefined ? true : o.bt;
-  var numLock = o.num || false, capsLock = o.caps || false, scrollLock = o.scroll || false;
+  var activeLayer = o.activeLayer===undefined ? 0 : o.activeLayer;
+  var held = o.held || [];
 
-  var osIcon = isMac ? ICON_KLOR_OS_MAC_ICON : ICON_KLOR_OS_WIN_ICON;
+  var mods = isMac ? MAC_MODS : WIN_MODS;
 
-  var s = '<svg viewBox="0 0 128 64" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="0" y="0" width="128" height="64" fill="var(--display-bg)"/>'
-    + '<g fill="var(--display-fg)" color="var(--display-fg)">'
-    + g(0, 1, ICON_KLOR_BT_ICON, btConnected ? 1 : 0)
-    + battery(78, 3, battLevel)
-    + '<text x="0" y="24" font-size="8" class="tx">'+layer+'</text>'
-    + rule(27)
-    + g(0, 31, osIcon)
-    + g(98, 31, ICON_KLOR_FACE_ICON)
-    + rule(49)
-    + g(0, 53, ICON_KLOR_LOCK_NUM_ICON, numLock ? 1 : 0)
-    + g(14, 53, ICON_KLOR_LOCK_CAPS_ICON, capsLock ? 1 : 0)
-    + g(28, 53, ICON_KLOR_LOCK_SCROLL_ICON, scrollLock ? 1 : 0)
-    + '</g></svg>';
-  return '<div class="display"><div class="di">'+s+'</div></div>';
+  var layerBadges='';
+  for (var n=1;n<=9;n++){
+    layerBadges += badge(''+n, activeLayer===(n-1));
+  }
+
+  return '<div class="display"><div class="di">'
+    + '<div class="row" style="top:2px;left:2px;">'+badge('BT', btConnected)+'</div>'
+    + '<div class="row right" style="top:2px;right:2px;">'+badge(charging?'CHG':'BAT',false)+pctBadge(battLevel)+'</div>'
+    + '<div class="layer" style="top:32px;">'+layer+'</div>'
+    + '<div class="rule" style="top:54px;"></div>'
+    + '<div class="row" style="top:62px;left:2px;">'+modRow(mods, held)+'</div>'
+    + '<div class="face" style="top:62px;right:2px;">'+FACE_SVG+'</div>'
+    + '<div class="rule" style="top:98px;"></div>'
+    + '<div class="row" style="top:106px;left:2px;">'+layerBadges+'</div>'
+    + '</div></div>';
 }
 
 /* ---- Peripheral (secondary) screen ---- */
 function peripheral(o){
   var battLevel = o.batt===undefined ? 75 : o.batt;
+  var charging = o.charging || false;
   var connected = o.connected===undefined ? true : o.connected;
+  var isMac = o.isMac || false;
+  var held = o.held || [];
 
-  var s = '<svg viewBox="0 0 128 64" xmlns="http://www.w3.org/2000/svg">'
-    + '<rect x="0" y="0" width="128" height="64" fill="var(--display-bg)"/>'
-    + '<g fill="var(--display-fg)" color="var(--display-fg)">'
-    + g(0, 0, ICON_KLOR_FACE_FULL)
-    + '<rect x="0" y="0" width="128" height="16" fill="var(--display-bg)"/>'
-    + g(0, 1, ICON_KLOR_WIFI_ICON, connected ? 1 : 0)
-    + battery(78, 3, battLevel)
-    + '</g></svg>';
-  return '<div class="display"><div class="di">'+s+'</div></div>';
+  var mods = isMac ? MAC_MODS_R : WIN_MODS_R;
+
+  return '<div class="display"><div class="di">'
+    + '<div class="row" style="top:2px;left:2px;">'+badge('LINKED', connected)+'</div>'
+    + '<div class="row right" style="top:2px;right:2px;">'+badge(charging?'CHG':'BAT',false)+pctBadge(battLevel)+'</div>'
+    + '<div class="rule" style="top:54px;"></div>'
+    + '<div class="face" style="top:62px;left:2px;">'+FACE_SVG+'</div>'
+    + '<div class="row right" style="top:62px;right:2px;">'+modRow(mods, held)+'</div>'
+    + '<div class="rule" style="top:98px;"></div>'
+    + '</div></div>';
 }
 
 function row(lbl, html){
@@ -97,18 +102,19 @@ function row(lbl, html){
 }
 
 var left = [
-  row('Qwerty (Win)\nBT connected, 75%\nno locks', central({layer:'Qwerty (Win)', batt:75, bt:true})),
-  row('Qwerty (Mac)\nBT connected, 90%\nNum Lock on', central({layer:'Qwerty (Mac)', isMac:true, batt:90, bt:true, num:true})),
-  row('Colemak-DH (Win)\nBT connected, 60%\nCaps Lock on', central({layer:'Colemak-DH (Win)', batt:60, bt:true, caps:true})),
-  row('Numbers\nBT connected, 50%\nScroll Lock on', central({layer:'Numbers', batt:50, bt:true, scroll:true})),
-  row('Admin\nBT disconnected\n25% (low)', central({layer:'Admin', batt:25, bt:false})),
-  row('Function Keys\nBT connected, 45%', central({layer:'Function Keys', batt:45, bt:true})),
+  row('Qwerty (Win)\nBT connected, 75%\nbase layer, no mods held', central({layer:'Qwerty (Win)', batt:75, bt:true, activeLayer:0})),
+  row('Qwerty (Mac)\nBT connected, 90%\nlayer 2, Shift+Cmd held', central({layer:'Qwerty (Mac)', isMac:true, batt:90, bt:true, activeLayer:1, held:['s','g']})),
+  row('Colemak-DH (Win)\nBT connected, 60%\nlayer 3, Ctrl held', central({layer:'Colemak-DH (Win)', batt:60, bt:true, activeLayer:2, held:['c']})),
+  row('Numbers\nBT connected, 50%\nlayer 5', central({layer:'Numbers', batt:50, bt:true, activeLayer:4})),
+  row('Admin\nBT disconnected\nlayer 8, 25%', central({layer:'Admin', batt:25, bt:false, activeLayer:7})),
+  row('Function Keys\nCharging, 45%\nlayer 9', central({layer:'Function Keys', batt:45, charging:true, activeLayer:8})),
 ];
 
 var right = [
-  row('Connected\n80%', peripheral({batt:80, connected:true})),
-  row('Connected\n65%', peripheral({batt:65, connected:true})),
-  row('Disconnected\n14% (low)', peripheral({batt:14, connected:false})),
+  row('Linked, 80%\nWin mods, none held', peripheral({batt:80, connected:true})),
+  row('Linked, 65%\nWin mods, Alt+Shift held', peripheral({batt:65, connected:true, held:['a','s']})),
+  row('Linked, Mac mods\nCmd held, 70%', peripheral({batt:70, connected:true, isMac:true, held:['g']})),
+  row('Not linked, 14%', peripheral({batt:14, connected:false})),
 ];
 
 document.getElementById('root').innerHTML =
