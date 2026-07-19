@@ -1,0 +1,62 @@
+/*
+ * Copyright (c) 2026 The ZMK Contributors
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+#include <physical_layouts.dtsi>
+
+/* Physical layout for ZMK Studio / the online keymap editor. Key order matches
+ * default_transform's `map` in klor.dtsi (== the keymap bindings order) 1:1.
+ * Coordinates are an approximate, non-overlapping visual layout, not exact
+ * mechanical dimensions — this is purely editor/UI metadata and has no effect
+ * on key function, which comes entirely from the matrix transform below.
+ */
+
+/ {
+    saegewerk_physical_layout: saegewerk_physical_layout {
+        compatible = "zmk,physical-layout";
+        display-name = "Saegewerk";
+
+        keys  //                    w   h    x    y     rot    rx    ry
+            = <&key_physical_attrs 100 100    0    0       0     0     0>
+            , <&key_physical_attrs 100 100  100   10       0     0     0>
+            , <&key_physical_attrs 100 100  200   18       0     0     0>
+            , <&key_physical_attrs 100 100  300   10       0     0     0>
+            , <&key_physical_attrs 100 100  400    2       0     0     0>
+            , <&key_physical_attrs 100 100  700    2       0     0     0>
+            , <&key_physical_attrs 100 100  800   10       0     0     0>
+            , <&key_physical_attrs 100 100  900   18       0     0     0>
+            , <&key_physical_attrs 100 100 1000   10       0     0     0>
+            , <&key_physical_attrs 100 100 1100    0       0     0     0>
+            , <&key_physical_attrs 100 100    0  100       0     0     0>
+            , <&key_physical_attrs 100 100  100  110       0     0     0>
+            , <&key_physical_attrs 100 100  200  118       0     0     0>
+            , <&key_physical_attrs 100 100  300  110       0     0     0>
+            , <&key_physical_attrs 100 100  400  102       0     0     0>
+            , <&key_physical_attrs 100 100  700  102       0     0     0>
+            , <&key_physical_attrs 100 100  800  110       0     0     0>
+            , <&key_physical_attrs 100 100  900  118       0     0     0>
+            , <&key_physical_attrs 100 100 1000  110       0     0     0>
+            , <&key_physical_attrs 100 100 1100  100       0     0     0>
+            , <&key_physical_attrs 100 100    0  200       0     0     0>
+            , <&key_physical_attrs 100 100  100  210       0     0     0>
+            , <&key_physical_attrs 100 100  200  218       0     0     0>
+            , <&key_physical_attrs 100 100  300  210       0     0     0>
+            , <&key_physical_attrs 100 100  400  202       0     0     0>
+            , <&key_physical_attrs 100 100  520  230       0     0     0>
+            , <&key_physical_attrs 100 100  680  230       0     0     0>
+            , <&key_physical_attrs 100 100  700  202       0     0     0>
+            , <&key_physical_attrs 100 100  800  210       0     0     0>
+            , <&key_physical_attrs 100 100  900  218       0     0     0>
+            , <&key_physical_attrs 100 100 1000  210       0     0     0>
+            , <&key_physical_attrs 100 100 1100  200       0     0     0>
+            , <&key_physical_attrs 100 100  150  340       0     0     0>
+            , <&key_physical_attrs 100 100  250  340       0     0     0>
+            , <&key_physical_attrs 100 100  350  340       0     0     0>
+            , <&key_physical_attrs 100 100  450  340       0     0     0>
+            , <&key_physical_attrs 100 100  550  340       0     0     0>
+            , <&key_physical_attrs 100 100  650  340       0     0     0>
+            ;
+    };
+};

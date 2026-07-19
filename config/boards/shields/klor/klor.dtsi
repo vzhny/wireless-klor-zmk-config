@@ -5,10 +5,16 @@
  */
 
 #include "klor_common.dtsi"
+#include "klor_saegewerk-layouts.dtsi"
+
+&saegewerk_physical_layout {
+	transform = <&default_transform>;
+};
 
 / {
 	chosen {
 		zmk,matrix_transform = &default_transform;
+		zmk,physical-layout = &saegewerk_physical_layout;
 	};
 
 	/* Saegewerk layout (38 keys): the KLOR PCB matrix is shared across all
