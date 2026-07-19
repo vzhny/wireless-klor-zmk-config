@@ -230,7 +230,7 @@
             bindings = <
 &trans  &trans  &trans      &trans        &trans        &kp HOME  &kp PAGE_DOWN  &kp PAGE_UP  &kp END    &trans
 &trans  &trans  &trans      &kp C_VOL_DN  &kp C_VOL_UP  &kp LEFT  &kp DOWN       &kp UP       &kp RIGHT  &trans
-&trans  &kp DELETE  &trans  &trans        &trans  &trans  &trans  &trans         &trans       &trans     &trans  &trans
+&trans  &kp BSPC &kp DELETE &trans        &trans  &trans  &trans  &trans         &trans       &trans     &trans  &trans
                             &trans        &trans        &trans    &trans         &trans       &trans
             >;
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
