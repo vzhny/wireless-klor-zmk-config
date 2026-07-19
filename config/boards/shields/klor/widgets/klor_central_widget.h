@@ -15,6 +15,7 @@ struct klor_central_widget {
     sys_snode_t node;
     lv_obj_t *obj;
     struct klor_badge bt_badge;
+    struct klor_badge profile_badge;
     struct klor_badge bat_badge;
     struct klor_badge pct_badge;
     struct klor_badge mod_badges[4];

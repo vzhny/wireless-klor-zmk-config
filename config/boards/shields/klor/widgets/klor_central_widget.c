@@ -55,6 +55,7 @@ struct klor_central_state {
     uint8_t battery_level;
     bool charging;
     bool bt_connected;
+    int profile_index;
     uint32_t mods;
 };
 
@@ -80,6 +81,15 @@ static void klor_central_render(struct klor_central_state state) {
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
         klor_badge_set_active(&widget->bt_badge, state.bt_connected);
+
+        if (state.bt_connected) {
+            char profile_buf[2];
+            snprintf(profile_buf, sizeof(profile_buf), "%d", state.profile_index);
+            klor_badge_set_text(&widget->profile_badge, profile_buf);
+        } else {
+            klor_badge_set_text(&widget->profile_badge, "X");
+        }
+        klor_badge_set_active(&widget->profile_badge, state.bt_connected);
 
         klor_badge_set_text(&widget->bat_badge, state.charging ? "CHG" : "BAT");
         char pct_buf[6];
@@ -117,6 +127,7 @@ static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) 
         .battery_level = zmk_battery_state_of_charge(),
         .charging = zmk_usb_is_powered(),
         .bt_connected = zmk_ble_active_profile_is_connected(),
+        .profile_index = zmk_ble_active_profile_index(),
         .mods = zmk_hid_get_explicit_mods(),
     };
 }
@@ -145,9 +156,12 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    /* Status strip -- BT badge top-left, BAT/CHG + % badges top-right */
-    klor_badge_create(&widget->bt_badge, widget->obj, "BT");
-    lv_obj_align(widget->bt_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
+    /* Status strip -- BT + profile badges top-left, BAT/CHG + % badges top-right */
+    lv_obj_t *bt_row =
+        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
+    lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
+    klor_badge_create(&widget->bt_badge, bt_row, "BT");
+    klor_badge_create(&widget->profile_badge, bt_row, "X");
 
     lv_obj_t *status_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
