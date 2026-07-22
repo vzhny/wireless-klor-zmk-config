@@ -59,6 +59,25 @@ struct klor_central_state {
     uint32_t mods;
 };
 
+/* ── BT connecting-dots animation ────────────────────────────────────── */
+
+static bool bt_flash_on = true;
+static uint8_t connecting_dots = 1; /* 1..3, advances each 500ms tick while searching */
+static bool bt_was_connected = true;
+static struct klor_central_state last_state;
+
+static void bt_flash_work_cb(struct k_work *work);
+static K_WORK_DEFINE(bt_flash_work, bt_flash_work_cb);
+
+static inline void submit_bt_flash_work(void) {
+    if (zmk_display_is_initialized()) {
+        k_work_submit_to_queue(zmk_display_work_q(), &bt_flash_work);
+    }
+}
+
+static void bt_flash_timer_cb(struct k_timer *timer) { submit_bt_flash_work(); }
+static K_TIMER_DEFINE(bt_flash_timer, bt_flash_timer_cb, NULL);
+
 /* Left-side modifier slot order, matching wireless-corne-zmk-config's
  * render_mod_canvas(): Win = SFT,CTL,GUI,ALT / Mac = SFT,CMD,CTL,OPT */
 static void mod_slot(bool mac_mode, int slot, const char **text, uint32_t *bit) {
@@ -79,17 +98,34 @@ static void mod_slot(bool mac_mode, int slot, const char **text, uint32_t *bit) 
 static void klor_central_render(struct klor_central_state state) {
     struct klor_central_widget *widget;
 
-    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        klor_badge_set_active(&widget->bt_badge, state.bt_connected);
+    last_state = state;
 
+    if (state.bt_connected != bt_was_connected) {
+        bt_was_connected = state.bt_connected;
         if (state.bt_connected) {
+            k_timer_stop(&bt_flash_timer);
+            bt_flash_on = true;
+        } else {
+            bt_flash_on = true;  /* start visible so first visible frame shows the badge */
+            connecting_dots = 1; /* restart dot animation at "." */
+            k_timer_start(&bt_flash_timer, K_MSEC(500), K_MSEC(500));
+        }
+    }
+
+    SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
+        if (state.bt_connected) {
+            klor_badge_set_active(&widget->bt_badge, true);
             char profile_buf[2];
             snprintf(profile_buf, sizeof(profile_buf), "%d", state.profile_index);
             klor_badge_set_text(&widget->profile_badge, profile_buf);
+            klor_badge_set_active(&widget->profile_badge, true);
         } else {
-            klor_badge_set_text(&widget->profile_badge, "X");
+            klor_badge_set_active(&widget->bt_badge, bt_flash_on);
+            char dots_buf[4];
+            snprintf(dots_buf, sizeof(dots_buf), "%.*s", connecting_dots, "...");
+            klor_badge_set_text(&widget->profile_badge, dots_buf);
+            klor_badge_set_active(&widget->profile_badge, bt_flash_on);
         }
-        klor_badge_set_active(&widget->profile_badge, state.bt_connected);
 
         klor_badge_set_text(&widget->bat_badge, state.charging ? "CHG" : "BAT");
         char pct_buf[6];
@@ -114,6 +150,12 @@ static void klor_central_render(struct klor_central_state state) {
             klor_badge_set_active(&widget->layer_badges[i], state.active_layer == i);
         }
     }
+}
+
+static void bt_flash_work_cb(struct k_work *work) {
+    bt_flash_on = !bt_flash_on;
+    connecting_dots = (connecting_dots % 3) + 1;
+    klor_central_render(last_state);
 }
 
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {

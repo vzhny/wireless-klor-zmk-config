@@ -34,6 +34,13 @@ function badge(text, on){
 function pctBadge(pct){
   return '<span class="badge pct">'+pct+'%</span>';
 }
+/* Live "Connecting" state: both spans carry data-hooks that the 500ms
+ * setInterval below toggles together, mirroring the single bt_flash_timer
+ * in klor_central_widget.c driving both the badge blink and the dot count. */
+function connectingBadges(){
+  return '<span class="badge on bt-connect-icon">BT</span>'
+       + '<span class="badge on bt-connect-dots">.</span>';
+}
 
 var WIN_MODS  = [['SFT','s'],['CTL','c'],['GUI','g'],['ALT','a']];
 var MAC_MODS  = [['SFT','s'],['CMD','g'],['CTL','c'],['OPT','a']];
@@ -55,6 +62,7 @@ function central(o){
   var battLevel = o.batt===undefined ? 75 : o.batt;
   var charging = o.charging || false;
   var btConnected = o.bt===undefined ? true : o.bt;
+  var isConnecting = o.bt === 'connecting';
   var profile = o.profile===undefined ? 0 : o.profile;
   var activeLayer = o.activeLayer===undefined ? 0 : o.activeLayer;
   var held = o.held || [];
@@ -66,8 +74,12 @@ function central(o){
     layerBadges += badge(''+n, activeLayer===(n-1));
   }
 
+  var btBadgesHtml = isConnecting
+    ? connectingBadges()
+    : badge('BT', btConnected)+badge(btConnected?(''+profile):'X', btConnected);
+
   return '<div class="display"><div class="di">'
-    + '<div class="row" style="top:2px;left:2px;">'+badge('BT', btConnected)+badge(btConnected?(''+profile):'X', btConnected)+'</div>'
+    + '<div class="row" style="top:2px;left:2px;">'+btBadgesHtml+'</div>'
     + '<div class="row right" style="top:2px;right:2px;">'+badge(charging?'CHG':'BAT',false)+pctBadge(battLevel)+'</div>'
     + '<div class="layer" style="top:32px;">'+layer+'</div>'
     + '<div class="rule" style="top:54px;"></div>'
@@ -107,7 +119,7 @@ var left = [
   row('Qwerty (Mac)\nBT connected, 90%\nlayer 2, Shift+Cmd held', central({layer:'Qwerty (Mac)', isMac:true, batt:90, bt:true, activeLayer:1, held:['s','g']})),
   row('Colemak-DH (Win)\nBT profile 2, 60%\nlayer 3, Ctrl held', central({layer:'Colemak-DH (Win)', batt:60, bt:true, profile:2, activeLayer:2, held:['c']})),
   row('Numbers\nBT connected, 50%\nlayer 5', central({layer:'Numbers', batt:50, bt:true, activeLayer:4})),
-  row('Admin\nBT disconnected\nlayer 8, 25%', central({layer:'Admin', batt:25, bt:false, activeLayer:7})),
+  row('Admin\nBT connecting\n(live 500ms anim), 25%', central({layer:'Admin', batt:25, bt:'connecting', activeLayer:7})),
   row('Function Keys\nCharging, 45%\nlayer 9', central({layer:'Function Keys', batt:45, charging:true, activeLayer:8})),
 ];
 
@@ -121,4 +133,18 @@ var right = [
 document.getElementById('root').innerHTML =
   '<div><div class="col-title">Left half &middot; central</div><div class="states-col">'+left.join('')+'</div></div>'
   + '<div><div class="col-title">Right half &middot; peripheral</div><div class="states-col">'+right.join('')+'</div></div>';
+
+/* Live demo of the "connecting" state: badges blink + dot count advances,
+ * both on the same 500ms tick -- mirrors the single bt_flash_timer driving
+ * bt_flash_on and connecting_dots together in klor_central_widget.c. */
+var connectDots = 0, connectOn = true;
+setInterval(function(){
+  connectDots = (connectDots + 1) % 3;
+  connectOn = !connectOn;
+  var dots = '.'.repeat(connectDots + 1);
+  document.querySelectorAll('.bt-connect-dots').forEach(function(el){ el.textContent = dots; });
+  document.querySelectorAll('.bt-connect-icon, .bt-connect-dots').forEach(function(el){
+    el.classList.toggle('on', connectOn);
+  });
+}, 500);
 </script>
