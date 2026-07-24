@@ -12,11 +12,18 @@
 #include <zephyr/logging/log.h>
 
 #include <zmk/events/keycode_state_changed.h>
-#include <zmk/hid.h>
+#include <zmk/events/layer_state_changed.h>
+#include <zmk/keymap.h>
 
 #include "klor_modifier_sync.h"
+#include "../widgets/klor_display_power.h"
+#include "../widgets/klor_central_widget.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
+
+/* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
+#define KLOR_MAC_LAYER_A 1
+#define KLOR_MAC_LAYER_B 3
 
 static struct bt_conn *periph_conn;
 static uint16_t mod_char_handle;
@@ -87,6 +94,7 @@ static void on_connected(struct bt_conn *conn, uint8_t err) {
     periph_conn = bt_conn_ref(conn);
     /* Delay to let ZMK's split protocol finish its own GATT discovery first */
     k_work_reschedule(&discover_work, K_MSEC(1000));
+    klor_display_power_peripheral_link_state(true);
 }
 
 static void on_disconnected(struct bt_conn *conn, uint8_t reason) {
@@ -96,6 +104,7 @@ static void on_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_conn_unref(periph_conn);
     periph_conn = NULL;
     mod_char_handle = 0;
+    klor_display_power_peripheral_link_state(false);
 }
 
 BT_CONN_CB_DEFINE(klor_mod_sync_conn_cb) = {
@@ -105,16 +114,40 @@ BT_CONN_CB_DEFINE(klor_mod_sync_conn_cb) = {
 
 /* ── Modifier state forwarding ───────────────────────────────────────── */
 
-static int keycode_event_cb(const zmk_event_t *eh) {
+static void send_mod_state(void) {
     if (!periph_conn || !mod_char_handle) {
-        return ZMK_EV_EVENT_BUBBLE;
+        return;
     }
-    zmk_mod_flags_t full_mods = zmk_hid_get_explicit_mods();
+    /* klor_central_widget.c's display-only shadow-tracked mods (see its
+     * shadow-tracking section) -- not zmk_hid_get_explicit_mods(). The
+     * peripheral's mod cells get the same real-time approximation the
+     * left half's own display does, and it sidesteps a confirmed bug
+     * where the real HID snapshot doesn't reliably clear a bit after
+     * releasing a modifier held in isolation (see klor_central_widget.c's
+     * shadow-tracking section). */
+    uint8_t full_mods = klor_central_widget_get_display_mods();
     /* Extract right-side modifier bits (bits 4-7) into a nibble (bits 0-3) */
     uint8_t r_mods = (full_mods >> 4) & 0x0F;
-    bt_gatt_write_without_response(periph_conn, mod_char_handle, &r_mods, 1, false);
+    bool is_mac = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
+                  zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
+    uint8_t payload = r_mods | (is_mac ? BIT(4) : 0);
+    bt_gatt_write_without_response(periph_conn, mod_char_handle, &payload, 1, false);
+}
+
+void klor_modifier_sync_notify_mods_changed(void) { send_mod_state(); }
+
+static int keycode_event_cb(const zmk_event_t *eh) {
+    send_mod_state();
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+static int layer_event_cb(const zmk_event_t *eh) {
+    send_mod_state();
     return ZMK_EV_EVENT_BUBBLE;
 }
 
 ZMK_LISTENER(klor_mod_sync_keys, keycode_event_cb);
 ZMK_SUBSCRIPTION(klor_mod_sync_keys, zmk_keycode_state_changed);
+
+ZMK_LISTENER(klor_mod_sync_layer, layer_event_cb);
+ZMK_SUBSCRIPTION(klor_mod_sync_layer, zmk_layer_state_changed);

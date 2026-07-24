@@ -28,7 +28,26 @@ if ZMK_DISPLAY
         bool
         default y
 
+    # Custom connection-driven blanking (klor_display_power.c) replaces this;
+    # leaving it enabled would un-blank the panel on the next keypress even
+    # while klor_display_power still considers the half connected.
+    config ZMK_DISPLAY_BLANK_ON_IDLE
+        default n
+
 endif # ZMK_DISPLAY
+
+config KLOR_DISPLAY_AUTO_OFF
+    bool "Turn KLOR OLEDs off once connected"
+    depends on ZMK_DISPLAY
+    default y
+    help
+      Blanks each half's OLED once it has a live connection (BT profile +
+      peripheral link on the left, peripheral link on the right), and
+      un-blanks it again if that connection drops or a new BT profile is
+      selected. These are bare SSD1306 panels, not nice!view modules, and
+      haven't been power-profiled on this PCB -- this treats them as a
+      connect/reconnect sanity check rather than an always-on status
+      display. Say n to keep both OLEDs always on instead.
 
 
 

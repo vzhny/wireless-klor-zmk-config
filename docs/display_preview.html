@@ -23,7 +23,7 @@ h1{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
 .face svg{display:block;width:60px;height:32px;}
 </style>
 <h1>KLOR &mdash; OLED Display States</h1>
-<p class="sub">128&times;64 SSD1306 &middot; 2&times; scale &middot; badge-style status indicators, monospace layer name</p>
+<p class="sub">128&times;64 SSD1306 &middot; 2&times; scale &middot; badge-style status indicators, monospace layer name &middot; auto-off once connected (CONFIG_KLOR_DISPLAY_AUTO_OFF)</p>
 <div class="grid" id="root"></div>
 <script>
 var FACE_SVG = '<svg viewBox="0 0 30 16" xmlns="http://www.w3.org/2000/svg" fill="#fff"><rect x="8" y="0" width="14" height="1" fill="currentColor"/><rect x="7" y="1" width="16" height="1" fill="currentColor"/><rect x="7" y="2" width="16" height="1" fill="currentColor"/><rect x="7" y="3" width="16" height="1" fill="currentColor"/><rect x="3" y="4" width="7" height="1" fill="currentColor"/><rect x="12" y="4" width="6" height="1" fill="currentColor"/><rect x="20" y="4" width="7" height="1" fill="currentColor"/><rect x="2" y="5" width="7" height="1" fill="currentColor"/><rect x="13" y="5" width="4" height="1" fill="currentColor"/><rect x="21" y="5" width="7" height="1" fill="currentColor"/><rect x="2" y="6" width="7" height="1" fill="currentColor"/><rect x="13" y="6" width="4" height="1" fill="currentColor"/><rect x="21" y="6" width="7" height="1" fill="currentColor"/><rect x="2" y="7" width="8" height="1" fill="currentColor"/><rect x="12" y="7" width="6" height="1" fill="currentColor"/><rect x="20" y="7" width="8" height="1" fill="currentColor"/><rect x="2" y="8" width="26" height="1" fill="currentColor"/><rect x="2" y="9" width="11" height="1" fill="currentColor"/><rect x="17" y="9" width="11" height="1" fill="currentColor"/><rect x="2" y="10" width="11" height="1" fill="currentColor"/><rect x="17" y="10" width="11" height="1" fill="currentColor"/><rect x="3" y="11" width="9" height="1" fill="currentColor"/><rect x="14" y="11" width="2" height="1" fill="currentColor"/><rect x="18" y="11" width="9" height="1" fill="currentColor"/><rect x="7" y="12" width="5" height="1" fill="currentColor"/><rect x="14" y="12" width="2" height="1" fill="currentColor"/><rect x="18" y="12" width="5" height="1" fill="currentColor"/><rect x="7" y="13" width="4" height="1" fill="currentColor"/><rect x="13" y="13" width="4" height="1" fill="currentColor"/><rect x="19" y="13" width="4" height="1" fill="currentColor"/><rect x="7" y="14" width="4" height="1" fill="currentColor"/><rect x="13" y="14" width="4" height="1" fill="currentColor"/><rect x="19" y="14" width="4" height="1" fill="currentColor"/><rect x="7" y="15" width="16" height="1" fill="currentColor"/></svg>';
@@ -114,6 +114,12 @@ function row(lbl, html){
   return '<div class="sw"><div class="sl">'+lbl.replace(/\n/g,'<br>')+'</div>'+html+'</div>';
 }
 
+/* klor_display_power.c's "kill switch": panel blanked once connected,
+ * shown here as a plain black screen -- see klor_display_power.h. */
+function off(){
+  return '<div class="display"><div class="di"></div></div>';
+}
+
 var left = [
   row('Qwerty (Win)\nBT connected, 75%\nbase layer, no mods held', central({layer:'Qwerty (Win)', batt:75, bt:true, activeLayer:0})),
   row('Qwerty (Mac)\nBT connected, 90%\nlayer 2, Shift+Cmd held', central({layer:'Qwerty (Mac)', isMac:true, batt:90, bt:true, activeLayer:1, held:['s','g']})),
@@ -121,6 +127,7 @@ var left = [
   row('Numbers\nBT connected, 50%\nlayer 5', central({layer:'Numbers', batt:50, bt:true, activeLayer:4})),
   row('Admin\nBT connecting\n(live 500ms anim), 25%', central({layer:'Admin', batt:25, bt:'connecting', activeLayer:7})),
   row('Function Keys\nCharging, 45%\nlayer 9', central({layer:'Function Keys', batt:45, charging:true, activeLayer:8})),
+  row('BT + peripheral link both up\nOLED off (kill switch)', off()),
 ];
 
 var right = [
@@ -128,6 +135,7 @@ var right = [
   row('Linked, 65%\nWin mods, Alt+Shift held', peripheral({batt:65, connected:true, held:['a','s']})),
   row('Linked, Mac mods\nCmd held, 70%', peripheral({batt:70, connected:true, isMac:true, held:['g']})),
   row('Not linked, 14%', peripheral({batt:14, connected:false})),
+  row('Linked to left half\nOLED off (kill switch)', off()),
 ];
 
 document.getElementById('root').innerHTML =

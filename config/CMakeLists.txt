@@ -4,6 +4,7 @@ if(CONFIG_ZMK_DISPLAY)
   zephyr_library_include_directories(${KLOR_SHIELD_DIR})
   zephyr_library_sources(${KLOR_SHIELD_DIR}/klor_status_screen.c)
   zephyr_library_sources(${KLOR_SHIELD_DIR}/widgets/klor_widgets_util.c)
+  zephyr_library_sources(${KLOR_SHIELD_DIR}/widgets/klor_display_power.c)
 
   if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     zephyr_library_sources(${KLOR_SHIELD_DIR}/widgets/klor_central_widget.c)

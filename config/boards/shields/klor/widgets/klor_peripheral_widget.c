@@ -9,9 +9,10 @@
  * Status strip (LINKED/BAT/%) mirrors the central screen's BT/BAT/% strip.
  * The modifier row mirrors wireless-corne-zmk-config's peripheral screen:
  * right-hand modifier state doesn't exist locally on this half (ZMK only
- * resolves keycodes/mods on the central half), so it's received over a
- * custom BLE GATT characteristic the central half writes to on every
- * keycode event (see split/klor_modifier_sync_*.c, ported from corne's
+ * resolves keycodes/mods/layers on the central half), so both the r_mods
+ * nibble and the Mac/Win glyph-order flag are received over a custom BLE
+ * GATT characteristic the central half writes to on every keycode/layer
+ * event (see split/klor_modifier_sync_*.c, ported from corne's
  * modifier_sync). That GATT write lands on the BT RX thread, not the
  * display thread, so updates go through the display work queue rather
  * than touching LVGL objects directly -- this is the same mechanism
@@ -26,20 +27,15 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/event_manager.h>
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/split_peripheral_status_changed.h>
-#include <zmk/events/layer_state_changed.h>
-#include <zmk/keymap.h>
 #include <zmk/battery.h>
 #include <zmk/usb.h>
 #include <zmk/split/bluetooth/peripheral.h>
 
 #include "klor_peripheral_widget.h"
 #include "klor_widgets_util.h"
+#include "klor_display_power.h"
 
 LV_IMG_DECLARE(klor_face_icon);
-
-/* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
-#define KLOR_MAC_LAYER_A 1
-#define KLOR_MAC_LAYER_B 3
 
 /* r_mods nibble bit layout, matches klor_modifier_sync.h */
 #define R_MOD_RCTRL BIT(0)
@@ -105,8 +101,9 @@ static void request_render(void) {
     }
 }
 
-void klor_peripheral_widget_update_r_mods(uint8_t r_mods) {
-    widget_state.r_mods = r_mods;
+void klor_peripheral_widget_update_mods(uint8_t payload) {
+    widget_state.r_mods = payload & 0x0F;
+    widget_state.mac_mode = !!(payload & BIT(4));
     request_render();
 }
 
@@ -125,13 +122,7 @@ static int battery_event_cb(const zmk_event_t *eh) {
 
 static int split_event_cb(const zmk_event_t *eh) {
     widget_state.link_connected = zmk_split_bt_peripheral_is_connected();
-    request_render();
-    return ZMK_EV_EVENT_BUBBLE;
-}
-
-static int layer_event_cb(const zmk_event_t *eh) {
-    widget_state.mac_mode =
-        zmk_keymap_layer_active(KLOR_MAC_LAYER_A) || zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
+    klor_display_power_link_state(widget_state.link_connected);
     request_render();
     return ZMK_EV_EVENT_BUBBLE;
 }
@@ -141,9 +132,6 @@ ZMK_SUBSCRIPTION(klor_peri_battery, zmk_battery_state_changed);
 
 ZMK_LISTENER(klor_peri_split, split_event_cb);
 ZMK_SUBSCRIPTION(klor_peri_split, zmk_split_peripheral_status_changed);
-
-ZMK_LISTENER(klor_peri_layer, layer_event_cb);
-ZMK_SUBSCRIPTION(klor_peri_layer, zmk_layer_state_changed);
 
 /* ── Init ────────────────────────────────────────────────────────────── */
 
@@ -197,10 +185,12 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
     widget_state.battery_level = zmk_battery_state_of_charge();
     widget_state.charging = zmk_usb_is_powered();
     widget_state.link_connected = zmk_split_bt_peripheral_is_connected();
-    widget_state.mac_mode =
-        zmk_keymap_layer_active(KLOR_MAC_LAYER_A) || zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
+    /* mac_mode starts false until the first synced payload arrives from
+     * central -- this half has no local layer state to read it from. */
+    widget_state.mac_mode = false;
     widget_state.r_mods = 0;
 
+    klor_display_power_link_state(widget_state.link_connected);
     klor_peripheral_render(NULL);
 
     return 0;

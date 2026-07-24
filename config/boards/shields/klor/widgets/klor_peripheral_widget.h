@@ -26,5 +26,9 @@ lv_obj_t *klor_peripheral_widget_obj(struct klor_peripheral_widget *widget);
 
 /* Called from klor_modifier_sync_peripheral.c's GATT write handler (BT RX
  * thread context, not the display thread -- this queues a redraw on the
- * display work queue rather than touching LVGL objects directly). */
-void klor_peripheral_widget_update_r_mods(uint8_t r_mods);
+ * display work queue rather than touching LVGL objects directly).
+ *
+ * payload bits 0-3: r_mods nibble. bit 4: Mac/Win glyph-order flag, forwarded
+ * by central since this half has no local keymap/layer state to derive it
+ * from (see klor_modifier_sync.h). */
+void klor_peripheral_widget_update_mods(uint8_t payload);

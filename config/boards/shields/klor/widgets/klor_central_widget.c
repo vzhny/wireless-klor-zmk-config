@@ -24,15 +24,16 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/events/layer_state_changed.h>
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/ble_active_profile_changed.h>
-#include <zmk/events/keycode_state_changed.h>
+#include <zmk/events/position_state_changed.h>
 #include <zmk/keymap.h>
 #include <zmk/battery.h>
 #include <zmk/ble.h>
 #include <zmk/usb.h>
-#include <zmk/hid.h>
 
 #include "klor_central_widget.h"
 #include "klor_widgets_util.h"
+#include "klor_display_power.h"
+#include "../split/klor_modifier_sync.h"
 
 LV_IMG_DECLARE(klor_face_icon);
 
@@ -40,11 +41,29 @@ LV_IMG_DECLARE(klor_face_icon);
 #define KLOR_MAC_LAYER_A 1
 #define KLOR_MAC_LAYER_B 3
 
-/* Standard HID modifier byte: bit0=LCtrl,bit1=LShift,bit2=LAlt,bit3=LGui */
+/* Standard HID modifier byte layout - bits 0-3 are the left-hand mods this
+ * half's own display reads, bits 4-7 are the right-hand mods forwarded to
+ * the peripheral (see klor_modifier_sync_central.c). */
 #define MOD_LCTRL BIT(0)
 #define MOD_LSHIFT BIT(1)
 #define MOD_LALT BIT(2)
 #define MOD_LGUI BIT(3)
+#define MOD_RCTRL BIT(4)
+#define MOD_RSHIFT BIT(5)
+#define MOD_RALT BIT(6)
+#define MOD_RGUI BIT(7)
+
+/* What the mod cells actually display - built entirely from watching raw
+ * key positions (see the shadow-tracking section below), not real HID mod
+ * state. Every modifier in klor.keymap is bound through one of the 8
+ * tracked hold-tap positions, so this alone is a complete picture of what
+ * should be lit - and it sidesteps a confirmed-on-hardware bug (see
+ * wireless-corne-zmk-config@75b8ca3) where reading the real HID snapshot
+ * left a mod cell stuck lit after releasing a modifier held in isolation,
+ * with no other key pressed to force a resync. Display-only, 8-bit HID
+ * shape (bits 0-3 left, 4-7 right) - never fed back into actual HID
+ * output. */
+static uint8_t shadow_mods;
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -56,7 +75,6 @@ struct klor_central_state {
     bool charging;
     bool bt_connected;
     int profile_index;
-    uint32_t mods;
 };
 
 /* ── BT connecting-dots animation ────────────────────────────────────── */
@@ -99,6 +117,7 @@ static void klor_central_render(struct klor_central_state state) {
     struct klor_central_widget *widget;
 
     last_state = state;
+    klor_display_power_bt_state(state.bt_connected);
 
     if (state.bt_connected != bt_was_connected) {
         bt_was_connected = state.bt_connected;
@@ -143,7 +162,7 @@ static void klor_central_render(struct klor_central_state state) {
             uint32_t bit;
             mod_slot(state.mac_mode, i, &text, &bit);
             klor_badge_set_text(&widget->mod_badges[i], text);
-            klor_badge_set_active(&widget->mod_badges[i], (state.mods & bit) != 0);
+            klor_badge_set_active(&widget->mod_badges[i], (shadow_mods & bit) != 0);
         }
 
         for (int i = 0; i < 9; i++) {
@@ -158,6 +177,138 @@ static void bt_flash_work_cb(struct k_work *work) {
     klor_central_render(last_state);
 }
 
+/* ── Modifier shadow-tracking (display-only) ──────────────────────────── *
+ *
+ * Real HID mod state only updates once ZMK's hold-tap logic actually
+ * decides tap vs hold, which for hml/hmr/thm's "balanced" flavor can lag
+ * well behind the physical press (interrupt-release rule). This watches
+ * raw key presses on the known modifier positions directly (fired the
+ * instant a physical key goes down/up, before hold-tap/combo logic
+ * resolves it) and manually lights up the display after that position's
+ * own tapping-term-ms, independent of whatever ZMK's real hold-tap
+ * decision eventually is - approximating "hold long enough and it's
+ * obviously a hold" the same way a person would judge it by eye. Ported
+ * from wireless-corne-zmk-config@dd9443c/75b8ca3.
+ *
+ * Deliberate approximation, not real HID state, and it can disagree with
+ * it - e.g. a quick type-through that resolves HOLD via balanced's
+ * interrupt-release rule before this timer fires won't light up here, and
+ * a position that's also part of a combo (10 shares combo_esc; 34 shares
+ * combo_undo and combo_caps_word; 35 shares combo_caps_word) can show a
+ * slightly late shadow light if that combo doesn't end up firing. Accepted
+ * trade-offs for a real-time-*feeling* indicator, not a perfectly accurate
+ * one - hml/hmr/thm's actual tap/hold behavior is untouched by any of
+ * this.
+ *
+ * Position -> logical mod, from klor.keymap's homerow/thumb bindings
+ * (KLOR_MAC_LAYER_A/B swap Ctrl<->Gui on the homerow only; positions 12
+ * and 17 don't swap; update this table if those bindings ever move): */
+
+struct shadow_mod_slot {
+    uint32_t position;
+    uint32_t tapping_term_ms;
+    bool swaps_with_mac; /* true for the two Ctrl/Gui-swap positions per hand */
+    uint8_t bit_win;     /* bit when !swaps_with_mac, or when swaps_with_mac && !is_mac */
+    uint8_t bit_mac;     /* bit when swaps_with_mac && is_mac (unused otherwise) */
+    bool held;
+    bool fired;
+    uint8_t applied_bit;
+    struct k_work_delayable work;
+};
+
+static void shadow_slot_timeout(struct k_work *work);
+
+static struct shadow_mod_slot shadow_slots[] = {
+    /* Left homerow: A/S/D (Ctrl/Gui swap with Mac layers, Alt fixed) */
+    {.position = 10,
+     .tapping_term_ms = 280,
+     .swaps_with_mac = true,
+     .bit_win = MOD_LCTRL,
+     .bit_mac = MOD_LGUI},
+    {.position = 11,
+     .tapping_term_ms = 280,
+     .swaps_with_mac = true,
+     .bit_win = MOD_LGUI,
+     .bit_mac = MOD_LCTRL},
+    {.position = 12, .tapping_term_ms = 280, .swaps_with_mac = false, .bit_win = MOD_LALT},
+    /* Right homerow: K/L/; (mirrors the left hand's swap) */
+    {.position = 17, .tapping_term_ms = 280, .swaps_with_mac = false, .bit_win = MOD_RALT},
+    {.position = 18,
+     .tapping_term_ms = 280,
+     .swaps_with_mac = true,
+     .bit_win = MOD_RGUI,
+     .bit_mac = MOD_RCTRL},
+    {.position = 19,
+     .tapping_term_ms = 280,
+     .swaps_with_mac = true,
+     .bit_win = MOD_RCTRL,
+     .bit_mac = MOD_RGUI},
+    /* Thumb shift keys - never swap with Mac/Win */
+    {.position = 34, .tapping_term_ms = 200, .swaps_with_mac = false, .bit_win = MOD_LSHIFT},
+    {.position = 35, .tapping_term_ms = 200, .swaps_with_mac = false, .bit_win = MOD_RSHIFT},
+};
+#define SHADOW_SLOT_COUNT ARRAY_SIZE(shadow_slots)
+
+static void shadow_render_work_cb(struct k_work *work) { klor_central_render(last_state); }
+static K_WORK_DEFINE(shadow_render_work, shadow_render_work_cb);
+
+static inline void submit_shadow_render(void) {
+    if (zmk_display_is_initialized()) {
+        k_work_submit_to_queue(zmk_display_work_q(), &shadow_render_work);
+    }
+}
+
+static void shadow_slot_timeout(struct k_work *work) {
+    struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+    struct shadow_mod_slot *slot = CONTAINER_OF(dwork, struct shadow_mod_slot, work);
+    if (!slot->held) {
+        return; /* released before the timer fired - a tap, not a hold */
+    }
+    slot->applied_bit =
+        (slot->swaps_with_mac && last_state.mac_mode) ? slot->bit_mac : slot->bit_win;
+    slot->fired = true;
+    shadow_mods |= slot->applied_bit;
+    submit_shadow_render();
+    klor_modifier_sync_notify_mods_changed();
+}
+
+static int position_event_cb(const zmk_event_t *eh) {
+    const struct zmk_position_state_changed *ev = as_zmk_position_state_changed(eh);
+    if (ev == NULL) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+    for (size_t i = 0; i < SHADOW_SLOT_COUNT; i++) {
+        struct shadow_mod_slot *slot = &shadow_slots[i];
+        if (slot->position != ev->position) {
+            continue;
+        }
+        if (ev->state) {
+            slot->held = true;
+            slot->fired = false;
+            k_work_schedule(&slot->work, K_MSEC(slot->tapping_term_ms));
+        } else {
+            slot->held = false;
+            k_work_cancel_delayable(&slot->work);
+            if (slot->fired) {
+                slot->fired = false;
+                shadow_mods &= ~slot->applied_bit;
+                submit_shadow_render();
+                klor_modifier_sync_notify_mods_changed();
+            }
+        }
+        break;
+    }
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(klor_central_position, position_event_cb);
+ZMK_SUBSCRIPTION(klor_central_position, zmk_position_state_changed);
+
+/* Shadow-tracked mods, 8-bit HID shape (bits 0-3 left, 4-7 right) - used by
+ * klor_modifier_sync_central.c to forward the right-hand nibble to the
+ * peripheral. */
+uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
+
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
     zmk_keymap_layer_index_t index = zmk_keymap_highest_layer_active();
 
@@ -170,7 +321,6 @@ static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) 
         .charging = zmk_usb_is_powered(),
         .bt_connected = zmk_ble_active_profile_is_connected(),
         .profile_index = zmk_ble_active_profile_index(),
-        .mods = zmk_hid_get_explicit_mods(),
     };
 }
 
@@ -179,7 +329,6 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_klor_central, struct klor_central_state,
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_layer_state_changed)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_battery_state_changed)
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed)
-ZMK_SUBSCRIPTION(widget_klor_central, zmk_keycode_state_changed)
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
@@ -244,6 +393,10 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     }
 
     sys_slist_append(&widgets, &widget->node);
+
+    for (size_t i = 0; i < SHADOW_SLOT_COUNT; i++) {
+        k_work_init_delayable(&shadow_slots[i].work, shadow_slot_timeout);
+    }
 
     widget_klor_central_init();
 
