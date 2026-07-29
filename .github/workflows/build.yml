@@ -1,5 +1,18 @@
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
+  prep:
+    runs-on: ubuntu-latest
+    outputs:
+      archive_name: ${{ steps.name.outputs.archive_name }}
+    steps:
+      - id: name
+        run: |
+          ts=$(TZ='America/New_York' date +'%m%d%Y-%H%M%S')
+          echo "archive_name=${{ github.ref_name }}-${ts}-klor-firmware" >> "$GITHUB_OUTPUT"
+
   build:
-    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3.0
+    needs: prep
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@597d3b2d71e8549a224711c3c2d34e9707312c45
+    with:
+      archive_name: ${{ needs.prep.outputs.archive_name }}
