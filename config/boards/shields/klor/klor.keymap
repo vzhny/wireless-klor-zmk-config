@@ -58,17 +58,6 @@
             quick-tap-ms = <175>;
             bindings = <&kp>, <&kp>;
         };
-
-        /* Q as bootloader-entry key: tap = Q, hold 2s = bootloader.
-         * Left half has no reset button soldered yet — this is the only way to
-         * get it into bootloader for reflashing. Remove once a reset button is on the PCB. */
-        bootloader_key: bootloader_key {
-            compatible = "zmk,behavior-hold-tap";
-            #binding-cells = <2>;
-            flavor = "hold-preferred";
-            tapping-term-ms = <2000>;
-            bindings = <&kp>, <&bootloader>;
-        };
     };
 
     conditional_layers {
@@ -165,7 +154,7 @@
         qwerty_win_layer {
             label = "Qwerty (Win)";
             bindings = <
-&bootloader_key Q 0  &kp W        &kp E        &kp R  &kp T             &kp Y            &kp U  &kp I        &kp O        &kp P
+&kp Q         &kp W        &kp E        &kp R  &kp T             &kp Y            &kp U  &kp I        &kp O        &kp P
 &hml LCTRL A  &hml LGUI S  &hml LALT D  &kp F  &kp G             &kp H            &kp J  &hmr RALT K  &hmr RGUI L  &hmr RCTRL SEMI
 &lt 5 Z       &kp X        &kp C        &kp V  &kp B  &kp C_MUTE &kp C_PP  &kp N  &kp M  &kp COMMA    &kp DOT      &lt 6 FSLH
                           &none        &mo 4  &thm LSHFT SPACE  &thm RSHFT BSPC  &mo 8  &none
@@ -198,7 +187,7 @@
         colemak_win_layer {
             label = "Colemak-DH (Win)";
             bindings = <
-&bootloader_key Q 0  &kp W        &kp F        &kp P  &kp B             &kp J            &kp L  &kp U        &kp Y        &kp SEMI
+&kp Q         &kp W        &kp F        &kp P  &kp B             &kp J            &kp L  &kp U        &kp Y        &kp SEMI
 &hml LCTRL A  &hml LGUI R  &hml LALT S  &kp T  &kp G             &kp M            &kp N  &hmr RALT E  &hmr RGUI I  &hmr RCTRL O
 &lt 5 Z       &kp X        &kp C        &kp D  &kp V  &trans     &trans    &kp K  &kp H  &kp COMMA    &kp DOT      &lt 6 FSLH
                           &none        &mo 4  &thm LSHFT SPACE  &thm RSHFT BSPC  &mo 8  &none
@@ -212,7 +201,7 @@
         colemak_mac_layer {
             label = "Colemak-DH (Mac)";
             bindings = <
-&bootloader_key Q 0  &kp W        &kp F        &kp P  &kp B             &kp J            &kp L  &kp U         &kp Y        &kp SEMI
+&kp Q         &kp W        &kp F        &kp P  &kp B             &kp J            &kp L  &kp U         &kp Y        &kp SEMI
 &hml LGUI A   &hml LCTRL R &hml LALT S  &kp T  &kp G             &kp M            &kp N  &hmr RALT E   &hmr RCTRL I &hmr RGUI O
 &lt 5 Z       &kp X        &kp C        &kp D  &kp V  &trans     &trans    &kp K  &kp H  &kp COMMA     &kp DOT      &lt 6 FSLH
                           &none        &mo 4  &thm LSHFT SPACE  &thm RSHFT BSPC  &mo 8  &none

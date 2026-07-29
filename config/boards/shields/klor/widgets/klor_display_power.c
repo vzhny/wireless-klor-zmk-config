@@ -34,6 +34,8 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
+#include <lvgl.h>
+
 #include "klor_display_power.h"
 
 #if IS_ENABLED(CONFIG_KLOR_DISPLAY_AUTO_OFF)
@@ -51,6 +53,12 @@ static void apply_blanked(bool want_blanked) {
         display_blanking_on(disp_dev);
     } else {
         display_blanking_off(disp_dev);
+        /* GDDRAM isn't cleared by suspend/resume, but nothing else guarantees
+         * a full repaint lands before the panel goes visible again (this can
+         * fire mid-redraw, e.g. klor_central_render() calls this before it's
+         * done updating badges/labels for the same state change). Force one
+         * so wake never shows a stale or partial frame. */
+        lv_obj_invalidate(lv_scr_act());
     }
 }
 
