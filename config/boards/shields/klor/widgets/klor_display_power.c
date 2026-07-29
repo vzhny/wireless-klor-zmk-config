@@ -49,6 +49,7 @@ static const struct device *const disp_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_disp
 static bool blanked;
 
 static void apply_blanked(bool want_blanked) {
+    LOG_DBG("klor_display_power: apply_blanked want=%d current=%d", want_blanked, blanked);
     if (want_blanked == blanked) {
         return;
     }
@@ -76,17 +77,22 @@ static void central_apply(void) {
 }
 
 void klor_display_power_bt_state(bool connected) {
+    LOG_DBG("klor_display_power: bt_state connected=%d", connected);
     c_bt_connected = connected;
     central_apply();
 }
 
 void klor_display_power_peripheral_link_state(bool connected) {
+    LOG_DBG("klor_display_power: peripheral_link_state connected=%d", connected);
     c_peripheral_linked = connected;
     central_apply();
 }
 
 /* Peripheral: off as soon as it's linked to central. */
-void klor_display_power_link_state(bool connected) { apply_blanked(connected); }
+void klor_display_power_link_state(bool connected) {
+    LOG_DBG("klor_display_power: link_state connected=%d", connected);
+    apply_blanked(connected);
+}
 
 #else /* !CONFIG_KLOR_DISPLAY_AUTO_OFF */
 
