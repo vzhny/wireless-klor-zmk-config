@@ -19,9 +19,13 @@
  * display_blanking_on()/off() (zephyr/drivers/display.h) issue the SSD1306's
  * own panel-off/on command (0xAE/0xAF) -- the same mechanism ZMK's stock
  * CONFIG_ZMK_DISPLAY_BLANK_ON_IDLE uses, just driven by connection state here
- * instead of an idle timer. That stock idle-blank is set to default n in
- * Kconfig.defconfig so it can't un-blank the panel on the next keypress while
- * this module still considers it connected.
+ * instead of an idle timer. That stock idle-blank defaults to y for SSD1306
+ * (app/src/display/Kconfig) and is explicitly turned off in klor_left.conf /
+ * klor_right.conf -- it must stay off, since this module is meant to be the
+ * only thing calling display_blanking_on/off. Both fighting over the same
+ * panel is what caused a white screen on wake: the stock path also stops
+ * the LVGL tick timer while blanked, so un-blanking mid-idle-cycle could
+ * bring the panel visible before anything had flushed a real frame to it.
  *
  * Set CONFIG_KLOR_DISPLAY_AUTO_OFF=n to disable this entirely and keep both
  * OLEDs always on instead (wireless-corne-zmk-config's nice!view behavior).
