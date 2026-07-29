@@ -13,6 +13,6 @@ jobs:
 
   build:
     needs: prep
-    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@597d3b2d71e8549a224711c3c2d34e9707312c45
+    uses: zmkfirmware/zmk/.github/workflows/build-user-config.yml@v0.3.0
     with:
       archive_name: ${{ needs.prep.outputs.archive_name }}
