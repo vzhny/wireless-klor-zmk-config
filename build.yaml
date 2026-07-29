@@ -13,13 +13,10 @@
 #
 
 include:
-  # Studio (snippet+cmake-args below) temporarily disabled — it and
-  # CONFIG_ZMK_USB_LOGGING both need the board's one CDC-ACM UART, so they
-  # can't build together. Re-enable once matrix debugging is done:
-  #   snippet: studio-rpc-usb-uart
-  #   cmake-args: -DCONFIG_ZMK_STUDIO=y
   - board: nice_nano_v2
     shield: klor_left
+    snippet: studio-rpc-usb-uart
+    cmake-args: -DCONFIG_ZMK_STUDIO=y
   - board: nice_nano_v2
     shield: klor_right
 # - board: nice_nano_v2

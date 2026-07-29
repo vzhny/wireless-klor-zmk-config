@@ -20,3 +20,20 @@
 &left_encoder {
 	status = "okay";
 };
+
+/* Second CDC-ACM UART, separate from Studio's RPC channel (snippet
+ * studio-rpc-usb-uart, see build.yaml), dedicated as the console for
+ * CONFIG_ZMK_USB_LOGGING (klor_left.conf). Both need their own UART —
+ * they can't share one. */
+&zephyr_udc0 {
+	log_uart0: log_uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "LOG_UART_0";
+	};
+};
+
+/ {
+	chosen {
+		zephyr,console = &log_uart0;
+	};
+};
