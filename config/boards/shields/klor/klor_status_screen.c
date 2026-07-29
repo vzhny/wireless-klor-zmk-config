@@ -17,7 +17,10 @@ static struct klor_peripheral_widget peripheral_widget;
 
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *screen = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(screen, lv_color_white(), LV_PART_MAIN);
+    /* Black bg with white/lit elements on top -- badges, rule lines and
+     * CONFIG_ZMK_DISPLAY_INVERT (klor_left.conf/klor_right.conf) all assume
+     * this. A white screen bg here inverted that, washing everything out. */
+    lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
     klor_central_widget_init(&central_widget, screen);
