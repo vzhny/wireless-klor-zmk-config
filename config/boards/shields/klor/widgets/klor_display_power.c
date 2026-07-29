@@ -34,6 +34,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/devicetree.h>
+#include <zephyr/init.h>
 #include <zephyr/drivers/display.h>
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -47,6 +48,26 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 static const struct device *const disp_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
 
 static bool blanked;
+
+/* The SSD1306 driver's own init (ssd1306_init_device, POST_KERNEL) turns
+ * the panel on unconditionally at the end, before anything has written a
+ * real frame -- that's the raw GDDRAM garbage ("static") on power-up. ZMK's
+ * own display init doesn't run until later (deferred work on the system
+ * work queue, competing with BLE bring-up), so there's a real, sometimes
+ * long, window where the garbage is visible. Blank it back off here, as
+ * early as APPLICATION init level allows -- strictly after the driver's
+ * POST_KERNEL init has already turned it on, but well before ZMK's own
+ * deferred first flush. That first flush (or this module's connection-state
+ * logic) un-blanks it again once there's real content. */
+static int early_blank_init(void) {
+    if (!device_is_ready(disp_dev)) {
+        return 0;
+    }
+    display_blanking_on(disp_dev);
+    blanked = true;
+    return 0;
+}
+SYS_INIT(early_blank_init, APPLICATION, 0);
 
 static void apply_blanked(bool want_blanked) {
     LOG_DBG("klor_display_power: apply_blanked want=%d current=%d", want_blanked, blanked);
