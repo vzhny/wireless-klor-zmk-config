@@ -1,3 +1,16 @@
+# The zmk-actions CI workflow copies ZMK_CONFIG into an isolated temp
+# directory for the actual build, and this file ends up getting included
+# from both that copy and the original checkout (west's own module
+# discovery vs. ZMK_CONFIG-driven discovery landing on different physical
+# paths for what's otherwise identical content) -- without this guard,
+# every source here gets compiled and linked twice, causing duplicate
+# symbol errors at link time.
+get_property(klor_cmakelists_included GLOBAL PROPERTY KLOR_CMAKELISTS_INCLUDED)
+if(klor_cmakelists_included)
+  return()
+endif()
+set_property(GLOBAL PROPERTY KLOR_CMAKELISTS_INCLUDED TRUE)
+
 set(KLOR_SHIELD_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 if(CONFIG_ZMK_DISPLAY)
