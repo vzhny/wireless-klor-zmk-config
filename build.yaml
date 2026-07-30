@@ -19,5 +19,11 @@ include:
     cmake-args: -DCONFIG_ZMK_STUDIO=y
   - board: nice_nano_v2
     shield: klor_right
-# - board: nice_nano_v2
-#    shield: settings_reset
+  # Debug: wipes NVS/bonding data. This session has reflashed the left half
+  # many times with very different firmware shapes (behavior/combo/layer
+  # counts changing each edit) -- every log capture shows repeated
+  # "settings: set-value failure" errors, consistent with NVS holding stale
+  # entries the current firmware's schema doesn't expect. Flash this once to
+  # rule that out (or fix it) before chasing more code-level theories.
+  - board: nice_nano_v2
+    shield: settings_reset
