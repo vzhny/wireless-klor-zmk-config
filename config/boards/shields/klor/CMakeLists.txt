@@ -1,4 +1,4 @@
-set(KLOR_SHIELD_DIR ${CMAKE_SOURCE_DIR}/config/boards/shields/klor)
+set(KLOR_SHIELD_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 if(CONFIG_ZMK_DISPLAY)
   zephyr_library_include_directories(${KLOR_SHIELD_DIR})
