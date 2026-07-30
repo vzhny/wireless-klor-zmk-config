@@ -77,6 +77,10 @@ static void start_discovery(struct k_work *work) {
 }
 
 /* ── BLE connection callbacks ────────────────────────────────────────── */
+/* DEBUG: neutered to isolate whether this connection-callback/GATT-discover
+ * code is why BT stopped pairing entirely once config/CMakeLists.txt started
+ * actually compiling. Restore once confirmed either way. */
+#if 0
 
 static void on_connected(struct bt_conn *conn, uint8_t err) {
     if (err) {
@@ -151,3 +155,9 @@ ZMK_SUBSCRIPTION(klor_mod_sync_keys, zmk_keycode_state_changed);
 
 ZMK_LISTENER(klor_mod_sync_layer, layer_event_cb);
 ZMK_SUBSCRIPTION(klor_mod_sync_layer, zmk_layer_state_changed);
+
+#endif /* DEBUG neutered block */
+
+/* Stub so klor_central_widget.c's call site still links with the rest of
+ * this file's BT/GATT logic neutered above. */
+void klor_modifier_sync_notify_mods_changed(void) {}
