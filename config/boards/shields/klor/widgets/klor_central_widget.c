@@ -130,14 +130,17 @@ static void klor_central_render(struct klor_central_state state) {
     }
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
+        klor_badge_set_active(&widget->bt_badge, state.bt_connected ? true : bt_flash_on);
+
+        /* minimal-test branch: profile_badge/bat_badge/pct_badge/layer_label
+         * not created right now (see klor_central_widget_init()) -- these
+         * would be uninitialized-pointer derefs otherwise.
         if (state.bt_connected) {
-            klor_badge_set_active(&widget->bt_badge, true);
             char profile_buf[2];
             snprintf(profile_buf, sizeof(profile_buf), "%d", state.profile_index);
             klor_badge_set_text(&widget->profile_badge, profile_buf);
             klor_badge_set_active(&widget->profile_badge, true);
         } else {
-            klor_badge_set_active(&widget->bt_badge, bt_flash_on);
             char dots_buf[4];
             snprintf(dots_buf, sizeof(dots_buf), "%.*s", connecting_dots, "...");
             klor_badge_set_text(&widget->profile_badge, dots_buf);
@@ -154,6 +157,7 @@ static void klor_central_render(struct klor_central_state state) {
         } else {
             lv_label_set_text(widget->layer_label, "");
         }
+        */
 
         /* minimal-test branch: mod_badges/layer_badges not created right
          * now (see klor_central_widget_init()) -- these would be
@@ -365,26 +369,27 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    /* Status strip -- BT + profile badges top-left, BAT/CHG + % badges top-right */
-    lv_obj_t *bt_row =
-        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
-    lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
-    klor_badge_create(&widget->bt_badge, bt_row, "BT");
-    klor_badge_create(&widget->profile_badge, bt_row, "X");
-
+    /* minimal-test branch: down to exactly 1 badge, matching step 5's scale,
+     * but still through widget->obj + the real ZMK_DISPLAY_WIDGET_LISTENER
+     * macro/sys_slist mechanism below. If this still fails, the bug is in
+     * that infrastructure, not badge/row volume.
     lv_obj_t *status_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
     lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
     klor_badge_create(&widget->bat_badge, status_row, "BAT");
     klor_badge_create(&widget->pct_badge, status_row, "100%");
 
-    /* Layer name (monospace) -- row 0 */
     widget->layer_label = lv_label_create(widget->obj);
     lv_obj_set_style_text_font(widget->layer_label, &pixel_operator_mono_large, LV_PART_MAIN);
     lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 16);
 
-    /* Rule -- row 1 */
     klor_rule(widget->obj, 128, 0, 27);
+    */
+
+    lv_obj_t *bt_row =
+        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
+    lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
+    klor_badge_create(&widget->bt_badge, bt_row, "BT");
 
     /* minimal-test branch: mod-badge row + layer-number row disabled to
      * bisect the BT/USB failure -- cutting badge count from ~17 down to the
@@ -403,8 +408,10 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
     */
 
-    /* Rule -- row 3 */
+    /* minimal-test branch: second rule line disabled too, see status_row
+     * comment above.
     klor_rule(widget->obj, 128, 0, 49);
+    */
 
     /* minimal-test branch: layer-number row disabled, see mod-badge row
      * comment above.
