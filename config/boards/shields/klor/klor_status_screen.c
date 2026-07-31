@@ -8,8 +8,6 @@
  * still excluded -- narrowing the BT/USB failure within klor_central_widget.c. */
 
 #include <zephyr/kernel.h>
-#include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <lvgl.h>
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
@@ -21,9 +19,7 @@ static struct klor_peripheral_widget peripheral_widget;
 #endif
 
 lv_obj_t *zmk_display_status_screen(void) {
-    LOG_ERR("klor_status_screen: zmk_display_status_screen() called");
     lv_obj_t *screen = lv_obj_create(NULL);
-    LOG_ERR("klor_status_screen: lv_obj_create(NULL) returned %p", (void *)screen);
     lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
 
 #if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
