@@ -4,31 +4,19 @@
  * SPDX-License-Identifier: MIT
  */
 
+/* minimal-test branch, step 4: bare minimum display -- just "TEST" on
+ * screen. No widgets, no klor_central_widget.c, no klor_display_power.c
+ * blanking logic, no color inversion. Bisecting from the confirmed-working
+ * no-display baseline. */
+
 #include <zephyr/kernel.h>
 #include <lvgl.h>
 
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
-#include "widgets/klor_central_widget.h"
-static struct klor_central_widget central_widget;
-#else
-#include "widgets/klor_peripheral_widget.h"
-static struct klor_peripheral_widget peripheral_widget;
-#endif
-
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *screen = lv_obj_create(NULL);
-    /* Black bg with white/lit elements on top -- badges, rule lines and
-     * CONFIG_ZMK_DISPLAY_INVERT (klor_left.conf/klor_right.conf) all assume
-     * this. A white screen bg here inverted that, washing everything out. */
-    lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
-
-#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
-    klor_central_widget_init(&central_widget, screen);
-    lv_obj_align(klor_central_widget_obj(&central_widget), LV_ALIGN_TOP_LEFT, 0, 0);
-#else
-    klor_peripheral_widget_init(&peripheral_widget, screen);
-    lv_obj_align(klor_peripheral_widget_obj(&peripheral_widget), LV_ALIGN_TOP_LEFT, 0, 0);
-#endif
-
+    lv_obj_t *label = lv_label_create(screen);
+    lv_obj_set_style_text_font(label, &lv_font_unscii_8, LV_PART_MAIN);
+    lv_label_set_text(label, "TEST");
+    lv_obj_center(label);
     return screen;
 }
