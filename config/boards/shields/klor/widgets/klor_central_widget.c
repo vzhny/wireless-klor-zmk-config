@@ -403,6 +403,17 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_t *dummy = lv_obj_create(widget->obj);
     lv_obj_set_size(dummy, 20, 12);
     lv_obj_align(dummy, LV_ALIGN_TOP_LEFT, 20, 1);
+    /* minimal-test branch: every OTHER lv_obj_create() in this codebase
+     * (badge->box in klor_widgets_util.c, the flex rows) explicitly clears
+     * LV_OBJ_FLAG_SCROLLABLE. This dummy box didn't -- and it's fixed-size
+     * (20x12) with a label that overflows it (pixel_operator_mono_large's
+     * "X" is taller than 12px), which is exactly the condition that makes a
+     * default-scrollable lv_obj compute scroll/content-overflow state. That's
+     * the one concrete structural difference between every failing test so
+     * far (label on a plain lv_obj_create()) and every passing one (label on
+     * a badge box, or a bare box with nothing overflowing it). Testing that
+     * alone, nothing else changed. */
+    lv_obj_clear_flag(dummy, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_t *dummy_label = lv_label_create(dummy);
     lv_obj_set_style_text_font(dummy_label, &pixel_operator_mono_large, LV_PART_MAIN);
     lv_label_set_text(dummy_label, "X");
