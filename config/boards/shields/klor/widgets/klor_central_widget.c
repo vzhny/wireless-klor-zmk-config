@@ -32,8 +32,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "klor_central_widget.h"
 #include "klor_widgets_util.h"
-#include "klor_display_power.h"
-#include "../split/klor_modifier_sync.h"
+#include "../fonts/pixel_operator_mono_large.h"
 
 LV_IMG_DECLARE(klor_face_icon);
 
@@ -117,7 +116,8 @@ static void klor_central_render(struct klor_central_state state) {
     struct klor_central_widget *widget;
 
     last_state = state;
-    klor_display_power_bt_state(state.bt_connected);
+    /* klor_display_power.c not in this build yet (minimal-test bisection) --
+     * stock ZMK idle-blank handles the panel for now. */
 
     if (state.bt_connected != bt_was_connected) {
         bt_was_connected = state.bt_connected;
@@ -269,7 +269,8 @@ static void shadow_slot_timeout(struct k_work *work) {
     slot->fired = true;
     shadow_mods |= slot->applied_bit;
     submit_shadow_render();
-    klor_modifier_sync_notify_mods_changed();
+    /* klor_modifier_sync_central.c not in this build yet (minimal-test
+     * bisection) -- no peripheral to forward mods to regardless. */
 }
 
 static int position_event_cb(const zmk_event_t *eh) {
@@ -293,7 +294,6 @@ static int position_event_cb(const zmk_event_t *eh) {
                 slot->fired = false;
                 shadow_mods &= ~slot->applied_bit;
                 submit_shadow_render();
-                klor_modifier_sync_notify_mods_changed();
             }
         }
         break;
@@ -362,7 +362,7 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
 
     /* Layer name (monospace) -- row 0 */
     widget->layer_label = lv_label_create(widget->obj);
-    lv_obj_set_style_text_font(widget->layer_label, &lv_font_unscii_8, LV_PART_MAIN);
+    lv_obj_set_style_text_font(widget->layer_label, &pixel_operator_mono_large, LV_PART_MAIN);
     lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 16);
 
     /* Rule -- row 1 */

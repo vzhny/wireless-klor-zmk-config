@@ -33,7 +33,6 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "klor_peripheral_widget.h"
 #include "klor_widgets_util.h"
-#include "klor_display_power.h"
 
 LV_IMG_DECLARE(klor_face_icon);
 
@@ -122,7 +121,7 @@ static int battery_event_cb(const zmk_event_t *eh) {
 
 static int split_event_cb(const zmk_event_t *eh) {
     widget_state.link_connected = zmk_split_bt_peripheral_is_connected();
-    klor_display_power_link_state(widget_state.link_connected);
+    /* klor_display_power.c not in this build yet (minimal-test bisection). */
     request_render();
     return ZMK_EV_EVENT_BUBBLE;
 }
@@ -190,7 +189,6 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
     widget_state.mac_mode = false;
     widget_state.r_mods = 0;
 
-    klor_display_power_link_state(widget_state.link_connected);
     klor_peripheral_render(NULL);
 
     return 0;

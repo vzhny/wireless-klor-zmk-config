@@ -4,30 +4,36 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* minimal-test branch, step 5: "TEST" label plus one badge in a row, to
- * exercise klor_widgets_util.c's flex-row/badge helpers. Still no
- * klor_central_widget.c, no klor_display_power.c blanking, no GATT sync. */
+/* minimal-test branch, step 6: real widget rendering restored
+ * (klor_central_widget.c / klor_peripheral_widget.c). Still no
+ * klor_display_power.c blanking (stock ZMK idle-blank for now,
+ * intentionally) and no klor_modifier_sync_central.c GATT sync. */
 
 #include <zephyr/kernel.h>
 #include <lvgl.h>
 
-#include "fonts/pixel_operator_mono_large.h"
-#include "widgets/klor_widgets_util.h"
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
+#include "widgets/klor_central_widget.h"
+static struct klor_central_widget central_widget;
+#else
+#include "widgets/klor_peripheral_widget.h"
+static struct klor_peripheral_widget peripheral_widget;
+#endif
 
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *screen = lv_obj_create(NULL);
+    /* Black bg with white/lit elements on top -- badges, rule lines and
+     * CONFIG_ZMK_DISPLAY_INVERT (klor_left.conf/klor_right.conf) all assume
+     * this. A white screen bg here inverted that, washing everything out. */
+    lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
 
-    lv_obj_t *label = lv_label_create(screen);
-    lv_obj_set_style_text_font(label, &pixel_operator_mono_large, LV_PART_MAIN);
-    lv_label_set_text(label, "TEST");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
-
-    lv_obj_t *row =
-        klor_badge_row_create(screen, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_CENTER);
-    lv_obj_align(row, LV_ALIGN_BOTTOM_MID, 0, 0);
-
-    static struct klor_badge badge;
-    klor_badge_create(&badge, row, "BADGE");
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
+    klor_central_widget_init(&central_widget, screen);
+    lv_obj_align(klor_central_widget_obj(&central_widget), LV_ALIGN_TOP_LEFT, 0, 0);
+#else
+    klor_peripheral_widget_init(&peripheral_widget, screen);
+    lv_obj_align(klor_peripheral_widget_obj(&peripheral_widget), LV_ALIGN_TOP_LEFT, 0, 0);
+#endif
 
     return screen;
 }
