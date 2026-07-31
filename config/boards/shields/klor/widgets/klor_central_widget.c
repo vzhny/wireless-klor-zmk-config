@@ -33,6 +33,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "klor_central_widget.h"
 #include "klor_widgets_util.h"
 #include "../fonts/pixel_operator_mono_large.h"
+#include "../fonts/pixel_operator_mono.h"
 
 /* klor_face_icon.c not in this build yet (minimal-test bisection).
  * LV_IMG_DECLARE(klor_face_icon); */
@@ -390,16 +391,26 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
     lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
     klor_badge_create(&widget->bt_badge, bt_row, "BT");
-    /* minimal-test branch: 2nd badge as a plain (non-flex) child also
-     * crashed (previous commit) -- not flex-recalculation specific, just
-     * "any 2nd klor_badge_create() call". Testing the plainest possible 2nd
-     * object instead: no label child, no badge styling, just a bare
-     * lv_obj_create(). Isolates "any 2nd object at all" vs. something
-     * specific to what klor_badge_create() does (label child + styles +
-     * font). widget->profile_badge intentionally left uncreated/unused. */
+    /* minimal-test branch: bare 2nd object (no label/font) worked fine,
+     * even through replug (previous commit) -- rules out "any 2nd object".
+     * Narrows to klor_badge_create()'s content: LV_SIZE_CONTENT auto-sizing,
+     * the label child + pixel_operator_mono custom font, or lv_obj_center().
+     * Testing a 2nd object with the SAME label+font+text+color as a badge,
+     * but FIXED size instead of LV_SIZE_CONTENT -- isolates whether
+     * content-based auto-sizing specifically is the trigger. Inlined
+     * (not via klor_badge_create()) so bt_badge's known-working config is
+     * untouched. widget->profile_badge intentionally left uncreated/unused. */
     lv_obj_t *dummy = lv_obj_create(widget->obj);
-    lv_obj_set_size(dummy, 10, 10);
+    lv_obj_set_size(dummy, 20, 12);
+    lv_obj_set_style_bg_color(dummy, lv_color_black(), LV_PART_MAIN);
+    lv_obj_set_style_bg_opa(dummy, LV_OPA_COVER, LV_PART_MAIN);
+    lv_obj_set_style_border_width(dummy, 0, LV_PART_MAIN);
     lv_obj_align(dummy, LV_ALIGN_TOP_LEFT, 20, 1);
+    lv_obj_t *dummy_label = lv_label_create(dummy);
+    lv_obj_set_style_text_color(dummy_label, lv_color_white(), LV_PART_MAIN);
+    lv_obj_set_style_text_font(dummy_label, &pixel_operator_mono, LV_PART_MAIN);
+    lv_label_set_text(dummy_label, "X");
+    lv_obj_center(dummy_label);
 
     /* minimal-test branch: mod-badge row + layer-number row disabled to
      * bisect the BT/USB failure -- cutting badge count from ~17 down to the
