@@ -13,12 +13,9 @@ set_property(GLOBAL PROPERTY KLOR_CMAKELISTS_INCLUDED TRUE)
 
 set(KLOR_SHIELD_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-# minimal-test branch, step 6b: back to klor_status_screen.c +
-# klor_widgets_util.c only (step 5's config) -- klor_central_widget.c and
-# klor_face_icon.c pulled back out. Testing whether the keymap-sync changes
-# (hml/hmr tuning, thumb backspace/enter, mac combo variants) alone, without
-# the widget code, are enough to reproduce the BT/USB failure -- untested
-# combination so far, since both landed in the same commit originally.
+# minimal-test branch, step 7: keymap-sync changes confirmed fine alone.
+# klor_central_widget.c back in (the actual culprit), klor_face_icon.c
+# still out -- narrowing further within the widget file.
 if(CONFIG_ZMK_DISPLAY)
   target_include_directories(app PRIVATE ${KLOR_SHIELD_DIR})
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/klor_status_screen.c)
@@ -32,13 +29,13 @@ if(CONFIG_ZMK_DISPLAY)
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/icon_font.c)
   # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_display_power.c)
 
-  # if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
-  #   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_central_widget.c)
-  #   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
-  #   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_central.c)
-  # else()
-  #   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_peripheral_widget.c)
-  #   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
-  #   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_peripheral.c)
-  # endif()
+  if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
+    target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_central_widget.c)
+    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
+    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_central.c)
+  else()
+    target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_peripheral_widget.c)
+    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
+    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_peripheral.c)
+  endif()
 endif()

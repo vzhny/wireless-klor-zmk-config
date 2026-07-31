@@ -4,30 +4,31 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* minimal-test branch, step 6b: back to step 5's screen (just "TEST" +
- * one badge, no klor_central_widget.c). Testing whether the keymap-sync
- * changes alone are enough to reproduce the BT/USB failure. */
+/* minimal-test branch, step 7: real widget rendering restored, klor_face_icon.c
+ * still excluded -- narrowing the BT/USB failure within klor_central_widget.c. */
 
 #include <zephyr/kernel.h>
 #include <lvgl.h>
 
-#include "fonts/pixel_operator_mono_large.h"
-#include "widgets/klor_widgets_util.h"
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
+#include "widgets/klor_central_widget.h"
+static struct klor_central_widget central_widget;
+#else
+#include "widgets/klor_peripheral_widget.h"
+static struct klor_peripheral_widget peripheral_widget;
+#endif
 
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *screen = lv_obj_create(NULL);
+    lv_obj_set_style_bg_color(screen, lv_color_black(), LV_PART_MAIN);
 
-    lv_obj_t *label = lv_label_create(screen);
-    lv_obj_set_style_text_font(label, &pixel_operator_mono_large, LV_PART_MAIN);
-    lv_label_set_text(label, "TEST");
-    lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
-
-    lv_obj_t *row =
-        klor_badge_row_create(screen, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_CENTER);
-    lv_obj_align(row, LV_ALIGN_BOTTOM_MID, 0, 0);
-
-    static struct klor_badge badge;
-    klor_badge_create(&badge, row, "BADGE");
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL) || !IS_ENABLED(CONFIG_ZMK_SPLIT)
+    klor_central_widget_init(&central_widget, screen);
+    lv_obj_align(klor_central_widget_obj(&central_widget), LV_ALIGN_TOP_LEFT, 0, 0);
+#else
+    klor_peripheral_widget_init(&peripheral_widget, screen);
+    lv_obj_align(klor_peripheral_widget_obj(&peripheral_widget), LV_ALIGN_TOP_LEFT, 0, 0);
+#endif
 
     return screen;
 }

@@ -34,7 +34,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "klor_widgets_util.h"
 #include "../fonts/pixel_operator_mono_large.h"
 
-LV_IMG_DECLARE(klor_face_icon);
+/* klor_face_icon.c not in this build yet (minimal-test bisection).
+ * LV_IMG_DECLARE(klor_face_icon); */
 
 /* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
 #define KLOR_MAC_LAYER_A 1
@@ -381,9 +382,11 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
 
+    /* klor_face_icon.c not in this build yet (minimal-test bisection).
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
     lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
+    */
 
     /* Rule -- row 3 */
     klor_rule(widget->obj, 128, 0, 49);
