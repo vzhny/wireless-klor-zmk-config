@@ -390,9 +390,13 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
     lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
     klor_badge_create(&widget->bt_badge, bt_row, "BT");
-    /* minimal-test branch: 2nd badge, same row -- 1 badge alone confirmed
-     * working (previous commit). */
-    klor_badge_create(&widget->profile_badge, bt_row, "X");
+    /* minimal-test branch: 2nd badge created as a PLAIN child of widget->obj,
+     * not added into bt_row's flex flow -- 2 badges in the same flex row
+     * crashed (previous commit), display showed only "BT". Isolating
+     * whether it's flex-layout recalculation specifically, or just "any
+     * 2nd object" in general. */
+    klor_badge_create(&widget->profile_badge, widget->obj, "X");
+    lv_obj_align(widget->profile_badge.box, LV_ALIGN_TOP_LEFT, 20, 1);
 
     /* minimal-test branch: mod-badge row + layer-number row disabled to
      * bisect the BT/USB failure -- cutting badge count from ~17 down to the
