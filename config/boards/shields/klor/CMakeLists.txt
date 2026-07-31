@@ -20,6 +20,13 @@ if(CONFIG_ZMK_DISPLAY)
   target_include_directories(app PRIVATE ${KLOR_SHIELD_DIR})
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/klor_status_screen.c)
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_widgets_util.c)
+  # Ported from wireless-corne-zmk-config: PixelOperatorMono (crisp on a
+  # 1bpp monochrome panel, unlike antialiased Montserrat) plus a Nerd Font
+  # icon subset for future glyph use. icon_font.c isn't used by any widget
+  # yet -- just wired in and available.
+  target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/pixel_operator_mono.c)
+  target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/pixel_operator_mono_large.c)
+  target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/icon_font.c)
   # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_display_power.c)
 
   # if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)

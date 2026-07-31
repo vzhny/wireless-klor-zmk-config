@@ -6,6 +6,8 @@
 
 #include "klor_widgets_util.h"
 
+#include "../fonts/pixel_operator_mono.h"
+
 lv_obj_t *klor_badge_row_create(lv_obj_t *parent, lv_coord_t w, lv_coord_t h,
                                 lv_flex_align_t row_align) {
     lv_obj_t *row = lv_obj_create(parent);
@@ -33,7 +35,7 @@ void klor_badge_create(struct klor_badge *badge, lv_obj_t *parent, const char *t
 
     badge->label = lv_label_create(badge->box);
     lv_obj_set_style_text_color(badge->label, lv_color_white(), LV_PART_MAIN);
-    lv_obj_set_style_text_font(badge->label, &lv_font_montserrat_8, LV_PART_MAIN);
+    lv_obj_set_style_text_font(badge->label, &pixel_operator_mono, LV_PART_MAIN);
     lv_label_set_text(badge->label, text);
     lv_obj_center(badge->label);
 }

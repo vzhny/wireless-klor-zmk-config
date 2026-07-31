@@ -11,13 +11,14 @@
 #include <zephyr/kernel.h>
 #include <lvgl.h>
 
+#include "fonts/pixel_operator_mono_large.h"
 #include "widgets/klor_widgets_util.h"
 
 lv_obj_t *zmk_display_status_screen(void) {
     lv_obj_t *screen = lv_obj_create(NULL);
 
     lv_obj_t *label = lv_label_create(screen);
-    lv_obj_set_style_text_font(label, &lv_font_unscii_8, LV_PART_MAIN);
+    lv_obj_set_style_text_font(label, &pixel_operator_mono_large, LV_PART_MAIN);
     lv_label_set_text(label, "TEST");
     lv_obj_align(label, LV_ALIGN_TOP_MID, 0, 0);
 
