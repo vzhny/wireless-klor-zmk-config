@@ -204,6 +204,13 @@ static void bt_flash_work_cb(struct k_work *work) {
  * (KLOR_MAC_LAYER_A/B swap Ctrl<->Gui on the homerow only; positions 12
  * and 17 don't swap; update this table if those bindings ever move): */
 
+#if 0
+/* minimal-test branch: disabled to bisect the BT/USB failure introduced by
+ * this file. Most complex/stateful part of the widget -- 8 k_work_delayable
+ * timers armed/cancelled from a position_state_changed listener, running
+ * alongside the BT-flash k_timer and badge rendering. Top suspect for a
+ * real runtime bug (race/reentrancy) vs. the rest of the file, which is
+ * plain LVGL object creation already proven safe in the single-badge test. */
 struct shadow_mod_slot {
     uint32_t position;
     uint32_t tapping_term_ms;
@@ -303,10 +310,11 @@ static int position_event_cb(const zmk_event_t *eh) {
 
 ZMK_LISTENER(klor_central_position, position_event_cb);
 ZMK_SUBSCRIPTION(klor_central_position, zmk_position_state_changed);
+#endif /* shadow mod tracking disabled */
 
 /* Shadow-tracked mods, 8-bit HID shape (bits 0-3 left, 4-7 right) - used by
  * klor_modifier_sync_central.c to forward the right-hand nibble to the
- * peripheral. */
+ * peripheral. Always 0 while shadow-tracking is disabled above. */
 uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
 
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
@@ -394,9 +402,11 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
 
     sys_slist_append(&widgets, &widget->node);
 
+#if 0
     for (size_t i = 0; i < SHADOW_SLOT_COUNT; i++) {
         k_work_init_delayable(&shadow_slots[i].work, shadow_slot_timeout);
     }
+#endif
 
     widget_klor_central_init();
 
