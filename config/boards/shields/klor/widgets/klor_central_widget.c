@@ -391,17 +391,20 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
     lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
     klor_badge_create(&widget->bt_badge, bt_row, "BT");
-    /* minimal-test branch: fixed size instead of LV_SIZE_CONTENT didn't help
-     * either (previous commit) -- rules that out too, but that test also
-     * added bg_color/bg_opa/border styling at the same time as the label,
-     * muddying which one actually matters. Back to the known-working bare
-     * object baseline, adding ONLY a label + pixel_operator_mono font this
-     * time -- no bg_color, no bg_opa, no border, no lv_obj_center(). */
+    /* minimal-test branch: even a bare 2nd label + pixel_operator_mono font,
+     * nothing else, still crashed (previous commit) -- down to just
+     * "2nd lv_label_create() + this custom font". Leaving the font entirely
+     * unset risks hitting an unconfigured LVGL default (LV_FONT_MONTSERRAT_8/
+     * UNSCII_8 were both removed at step 6 when we switched to these custom
+     * fonts) -- a new confound, not a clean test. Using
+     * pixel_operator_mono_large instead (already compiled in, proven
+     * elsewhere) pinpoints "any 2nd custom font use" vs.
+     * "pixel_operator_mono specifically" without introducing that risk. */
     lv_obj_t *dummy = lv_obj_create(widget->obj);
     lv_obj_set_size(dummy, 20, 12);
     lv_obj_align(dummy, LV_ALIGN_TOP_LEFT, 20, 1);
     lv_obj_t *dummy_label = lv_label_create(dummy);
-    lv_obj_set_style_text_font(dummy_label, &pixel_operator_mono, LV_PART_MAIN);
+    lv_obj_set_style_text_font(dummy_label, &pixel_operator_mono_large, LV_PART_MAIN);
     lv_label_set_text(dummy_label, "X");
 
     /* minimal-test branch: mod-badge row + layer-number row disabled to
