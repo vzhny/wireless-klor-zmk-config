@@ -13,13 +13,13 @@ set_property(GLOBAL PROPERTY KLOR_CMAKELISTS_INCLUDED TRUE)
 
 set(KLOR_SHIELD_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-# minimal-test branch, step 4: only klor_status_screen.c (bare "TEST" label).
-# Widgets, klor_display_power.c blanking, face icon and GATT modifier sync
-# all commented out -- adding back one at a time from here.
+# minimal-test branch, step 5: klor_status_screen.c + klor_widgets_util.c
+# (badge/row helpers). klor_display_power.c blanking, widget rendering,
+# face icon and GATT modifier sync still commented out.
 if(CONFIG_ZMK_DISPLAY)
   target_include_directories(app PRIVATE ${KLOR_SHIELD_DIR})
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/klor_status_screen.c)
-  # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_widgets_util.c)
+  target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_widgets_util.c)
   # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_display_power.c)
 
   # if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
