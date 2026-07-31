@@ -320,17 +320,20 @@ ZMK_SUBSCRIPTION(klor_central_position, zmk_position_state_changed);
 uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
 
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
-    zmk_keymap_layer_index_t index = zmk_keymap_highest_layer_active();
-
+    /* minimal-test branch: hardcoded dummy state to bisect the BT/USB
+     * failure. step 5's screen never called any zmk_keymap_*/zmk_battery_*/
+     * zmk_usb_*/zmk_ble_* API -- none of that's been exercised by any
+     * working test so far. If one of these isn't safe to call this early
+     * in boot (before some subsystem finishes initializing), that would
+     * crash independent of badge count entirely. */
     return (struct klor_central_state){
-        .layer_label = zmk_keymap_layer_name(zmk_keymap_layer_index_to_id(index)),
-        .active_layer = index,
-        .mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
-                    zmk_keymap_layer_active(KLOR_MAC_LAYER_B),
-        .battery_level = zmk_battery_state_of_charge(),
-        .charging = zmk_usb_is_powered(),
-        .bt_connected = zmk_ble_active_profile_is_connected(),
-        .profile_index = zmk_ble_active_profile_index(),
+        .layer_label = "TEST",
+        .active_layer = 0,
+        .mac_mode = false,
+        .battery_level = 100,
+        .charging = false,
+        .bt_connected = false,
+        .profile_index = 0,
     };
 }
 
