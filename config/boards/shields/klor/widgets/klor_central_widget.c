@@ -119,16 +119,13 @@ static void klor_central_render(struct klor_central_state state) {
     /* klor_display_power.c not in this build yet (minimal-test bisection) --
      * stock ZMK idle-blank handles the panel for now. */
 
+    /* minimal-test branch: BT-flash timer disabled to bisect the BT/USB
+     * failure. It calls klor_central_render() recursively from its own
+     * k_work, on a periodic k_timer, outside ZMK_DISPLAY_WIDGET_LISTENER's
+     * normal render path/serialization -- a reentrancy suspect. */
     if (state.bt_connected != bt_was_connected) {
         bt_was_connected = state.bt_connected;
-        if (state.bt_connected) {
-            k_timer_stop(&bt_flash_timer);
-            bt_flash_on = true;
-        } else {
-            bt_flash_on = true;  /* start visible so first visible frame shows the badge */
-            connecting_dots = 1; /* restart dot animation at "." */
-            k_timer_start(&bt_flash_timer, K_MSEC(500), K_MSEC(500));
-        }
+        bt_flash_on = true;
     }
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
