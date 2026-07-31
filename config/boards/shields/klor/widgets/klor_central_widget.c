@@ -321,11 +321,11 @@ uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
 
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
     /* minimal-test branch: hardcoded dummy state to bisect the BT/USB
-     * failure. step 5's screen never called any zmk_keymap_*/zmk_battery_*/
-     * zmk_usb_*/zmk_ble_* API -- none of that's been exercised by any
-     * working test so far. If one of these isn't safe to call this early
-     * in boot (before some subsystem finishes initializing), that would
-     * crash independent of badge count entirely. */
+     * failure. step 5's screen never called any ZMK keymap, battery, usb,
+     * or ble API -- none of that's been exercised by any working test so
+     * far. If one of these isn't safe to call this early in boot (before
+     * some subsystem finishes initializing), that would crash independent
+     * of badge count entirely. */
     return (struct klor_central_state){
         .layer_label = "TEST",
         .active_layer = 0,
