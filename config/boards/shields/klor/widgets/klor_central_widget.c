@@ -330,11 +330,16 @@ static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) 
     };
 }
 
+/* minimal-test branch: event subscriptions disabled to bisect the BT/USB
+ * failure. This is the first widget in the bisection that subscribes to
+ * live ZMK events and re-renders on each one -- step 5's test screen only
+ * ever drew once at boot. zmk_ble_active_profile_changed fires exactly
+ * when BT is trying to connect, so a crash in that specific re-render path
+ * would explain why BT specifically never comes up. The macro's one-time
+ * init call (widget_klor_central_init(), below) still populates the
+ * display once; nothing re-triggers it after that now. */
 ZMK_DISPLAY_WIDGET_LISTENER(widget_klor_central, struct klor_central_state,
                             klor_central_render, klor_central_get_state)
-ZMK_SUBSCRIPTION(widget_klor_central, zmk_layer_state_changed)
-ZMK_SUBSCRIPTION(widget_klor_central, zmk_battery_state_changed)
-ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed)
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
