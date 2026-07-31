@@ -155,6 +155,9 @@ static void klor_central_render(struct klor_central_state state) {
             lv_label_set_text(widget->layer_label, "");
         }
 
+        /* minimal-test branch: mod_badges/layer_badges not created right
+         * now (see klor_central_widget_init()) -- these would be
+         * uninitialized-pointer derefs otherwise.
         for (int i = 0; i < 4; i++) {
             const char *text;
             uint32_t bit;
@@ -166,6 +169,7 @@ static void klor_central_render(struct klor_central_state state) {
         for (int i = 0; i < 9; i++) {
             klor_badge_set_active(&widget->layer_badges[i], state.active_layer == i);
         }
+        */
     }
 }
 
@@ -379,13 +383,16 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     /* Rule -- row 1 */
     klor_rule(widget->obj, 128, 0, 27);
 
-    /* Modifier badges (left) + KLOR face icon (right) -- row 2 */
+    /* minimal-test branch: mod-badge row + layer-number row disabled to
+     * bisect the BT/USB failure -- cutting badge count from ~17 down to the
+     * 4-badge status strip, closer to the proven-working single-badge test.
     lv_obj_t *mod_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
     lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 31);
     for (int i = 0; i < 4; i++) {
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
+    */
 
     /* klor_face_icon.c not in this build yet (minimal-test bisection).
     widget->face_icon = lv_img_create(widget->obj);
@@ -396,7 +403,8 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     /* Rule -- row 3 */
     klor_rule(widget->obj, 128, 0, 49);
 
-    /* Layer number badges 1-9 -- row 4, replaces the old lock-key row */
+    /* minimal-test branch: layer-number row disabled, see mod-badge row
+     * comment above.
     lv_obj_t *layer_row = klor_badge_row_create(widget->obj, 128, 11, LV_FLEX_ALIGN_START);
     lv_obj_align(layer_row, LV_ALIGN_TOP_LEFT, 0, 53);
     for (int i = 0; i < 9; i++) {
@@ -404,6 +412,7 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         snprintf(buf, sizeof(buf), "%d", i + 1);
         klor_badge_create(&widget->layer_badges[i], layer_row, buf);
     }
+    */
 
     sys_slist_append(&widgets, &widget->node);
 
