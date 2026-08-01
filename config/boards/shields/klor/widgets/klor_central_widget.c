@@ -32,8 +32,6 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "klor_central_widget.h"
 #include "klor_widgets_util.h"
-#include "../fonts/pixel_operator_mono_large.h"
-#include "../fonts/pixel_operator_mono.h"
 
 /* klor_face_icon.c not in this build yet -- root cause of the static-display
  * bug (LV_Z_MEM_POOL_SIZE Kconfig mixup, see klor_left.conf) is fixed, but
@@ -164,12 +162,6 @@ static void klor_central_render(struct klor_central_state state) {
         char pct_buf[6];
         snprintf(pct_buf, sizeof(pct_buf), "%d%%", state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
-
-        if (state.layer_label != NULL && strlen(state.layer_label) > 0) {
-            lv_label_set_text(widget->layer_label, state.layer_label);
-        } else {
-            lv_label_set_text(widget->layer_label, "");
-        }
 
         for (int i = 0; i < 4; i++) {
             const char *text;
@@ -381,18 +373,14 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
      * growing leftward from the right edge like intended. */
     lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
-    widget->layer_label = lv_label_create(widget->obj);
-    lv_obj_set_style_text_font(widget->layer_label, &pixel_operator_mono_large, LV_PART_MAIN);
-    lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 16);
-
-    klor_rule(widget->obj, 128, 0, 27);
+    klor_rule(widget->obj, 128, 0, 11);
 
     klor_badge_create(&widget->bt_badge, widget->obj, "BT...");
     lv_obj_align(widget->bt_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
     lv_obj_t *mod_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
-    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 31);
+    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 15);
     for (int i = 0; i < 4; i++) {
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
@@ -401,13 +389,13 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
      * above.
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
-    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 15);
     */
 
-    klor_rule(widget->obj, 128, 0, 49);
+    klor_rule(widget->obj, 128, 0, 33);
 
     klor_badge_create(&widget->layer_name_badge, widget->obj, "Base");
-    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 53);
+    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 37);
 
     sys_slist_append(&widgets, &widget->node);
 

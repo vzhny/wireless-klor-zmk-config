@@ -19,7 +19,6 @@ struct klor_central_widget {
     struct klor_badge pct_badge;
     struct klor_badge mod_badges[4];
     lv_obj_t *face_icon;
-    lv_obj_t *layer_label;
     struct klor_badge layer_name_badge;
 };
 
