@@ -60,5 +60,13 @@
 		display-offset = <0>;
 		multiplex-ratio = <63>;
 		prechargep = <0x22>;
+		/* Panel shows white bg/black fg by default -- code explicitly sets
+		 * black bg/white fg (klor_status_screen.c, klor_widgets_util.c) and
+		 * CONFIG_ZMK_DISPLAY_INVERT (klor_left.conf) only affects LVGL's
+		 * mono theme color choice, not the physical controller, confirmed
+		 * via zmkfirmware/zmk source search -- this SSD1306 devicetree
+		 * property is the actual hardware polarity flip.
+		 */
+		inversion-on;
 	};
 };
