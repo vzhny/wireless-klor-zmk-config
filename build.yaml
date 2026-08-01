@@ -19,3 +19,12 @@ include:
     shield: klor_left
   - board: nice_nano_v2
     shield: klor_right
+  # Temporary: testing whether dozens of flashes/BT pairings this session
+  # have left the NVS/settings partition (untouched by normal app UF2
+  # flashes) in a state that's delaying/breaking log backend startup,
+  # independent of which application firmware is loaded -- a4be99f's UF2
+  # is byte-identical to 8de214f's (confirmed via md5) yet behaves
+  # differently across flashes, which rules out the application image
+  # itself as the cause.
+  - board: nice_nano_v2
+    shield: settings_reset
