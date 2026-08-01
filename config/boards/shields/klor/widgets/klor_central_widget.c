@@ -45,6 +45,20 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define KLOR_MAC_LAYER_A 1
 #define KLOR_MAC_LAYER_B 3
 
+/* Layer index -> display name, matching klor.keymap's layer order exactly
+ * (0 qwerty_win, 1 qwerty_mac, 2 colemak_win, 3 colemak_mac, 4 num, 5 nav,
+ * 6 sym, 7 admin, 8 func). All four base-layer variants collapse to "Base"
+ * -- Win vs Mac and Qwerty vs Colemak aren't shown here. Update this if
+ * klor.keymap's layer order ever changes. */
+static const char *layer_names[] = {
+    "Base", "Base", "Base", "Base", "Num", "Nav", "Sym", "Admin", "Func",
+};
+#define LAYER_NAME_COUNT ARRAY_SIZE(layer_names)
+
+static const char *layer_name_for(int layer) {
+    return (layer >= 0 && layer < LAYER_NAME_COUNT) ? layer_names[layer] : "?";
+}
+
 /* Standard HID modifier byte layout - bits 0-3 are the left-hand mods this
  * half's own display reads, bits 4-7 are the right-hand mods forwarded to
  * the peripheral (see klor_modifier_sync_central.c). */
@@ -165,9 +179,10 @@ static void klor_central_render(struct klor_central_state state) {
             klor_badge_set_active(&widget->mod_badges[i], (shadow_mods & bit) != 0);
         }
 
-        for (int i = 0; i < 9; i++) {
-            klor_badge_set_active(&widget->layer_badges[i], state.active_layer == i);
-        }
+        klor_badge_set_text(&widget->layer_name_badge, state.layer_label);
+        /* Always black bg/white fg -- unlike mod_badges/bt_badge, this one
+         * never inverts to an "active" look, per explicit instruction. */
+        klor_badge_set_active(&widget->layer_name_badge, false);
     }
 }
 
@@ -321,7 +336,7 @@ static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) 
                     zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
 
     return (struct klor_central_state){
-        .layer_label = "",
+        .layer_label = layer_name_for(layer),
         .active_layer = layer,
         .mac_mode = mac_mode,
         .battery_level = zmk_battery_state_of_charge(),
@@ -391,13 +406,8 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
 
     klor_rule(widget->obj, 128, 0, 49);
 
-    lv_obj_t *layer_row = klor_badge_row_create(widget->obj, 128, 11, LV_FLEX_ALIGN_START);
-    lv_obj_align(layer_row, LV_ALIGN_TOP_LEFT, 0, 53);
-    for (int i = 0; i < 9; i++) {
-        char buf[2];
-        snprintf(buf, sizeof(buf), "%d", i + 1);
-        klor_badge_create(&widget->layer_badges[i], layer_row, buf);
-    }
+    klor_badge_create(&widget->layer_name_badge, widget->obj, "Base");
+    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 53);
 
     sys_slist_append(&widgets, &widget->node);
 
