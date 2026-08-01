@@ -29,12 +29,18 @@ void klor_badge_create(struct klor_badge *badge, lv_obj_t *parent, const char *t
     lv_obj_set_style_pad_ver(badge->box, 1, LV_PART_MAIN);
     lv_obj_set_style_radius(badge->box, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(badge->box, 0, LV_PART_MAIN);
-    lv_obj_set_style_bg_color(badge->box, lv_color_black(), LV_PART_MAIN);
+    /* Physical panel has inversion-on set (klor_common.dtsi) to fix overall
+     * screen bg/fg polarity, which also flips these explicit fill colors --
+     * lv_color_white() here nets out to a physically black box, and
+     * lv_color_black() to physically white text, matching the panel's
+     * default black-bg/white-fg look. Verified against real hardware, not
+     * derived from the color names. */
+    lv_obj_set_style_bg_color(badge->box, lv_color_white(), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(badge->box, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_clear_flag(badge->box, LV_OBJ_FLAG_SCROLLABLE);
 
     badge->label = lv_label_create(badge->box);
-    lv_obj_set_style_text_color(badge->label, lv_color_white(), LV_PART_MAIN);
+    lv_obj_set_style_text_color(badge->label, lv_color_black(), LV_PART_MAIN);
     lv_obj_set_style_text_font(badge->label, &pixel_operator_mono, LV_PART_MAIN);
     lv_label_set_text(badge->label, text);
     lv_obj_center(badge->label);
@@ -45,8 +51,9 @@ void klor_badge_set_text(struct klor_badge *badge, const char *text) {
 }
 
 void klor_badge_set_active(struct klor_badge *badge, bool active) {
-    lv_obj_set_style_bg_color(badge->box, active ? lv_color_white() : lv_color_black(),
+    /* Swapped for inversion-on, see klor_badge_create(). */
+    lv_obj_set_style_bg_color(badge->box, active ? lv_color_black() : lv_color_white(),
                               LV_PART_MAIN);
-    lv_obj_set_style_text_color(badge->label, active ? lv_color_black() : lv_color_white(),
+    lv_obj_set_style_text_color(badge->label, active ? lv_color_white() : lv_color_black(),
                                 LV_PART_MAIN);
 }

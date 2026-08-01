@@ -347,7 +347,10 @@ ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed);
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
     lv_obj_set_size(line, w, 1);
-    lv_obj_set_style_bg_color(line, lv_color_white(), LV_PART_MAIN);
+    /* Swapped for inversion-on (klor_common.dtsi) -- lv_color_black() nets
+     * out to a physically lit/white divider line, see klor_widgets_util.c's
+     * klor_badge_create() for the same swap on badges. */
+    lv_obj_set_style_bg_color(line, lv_color_black(), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(line, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_width(line, 0, LV_PART_MAIN);
     lv_obj_set_style_radius(line, 0, LV_PART_MAIN);
