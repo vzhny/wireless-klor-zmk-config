@@ -35,7 +35,10 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "../fonts/pixel_operator_mono_large.h"
 #include "../fonts/pixel_operator_mono.h"
 
-/* klor_face_icon.c not in this build yet (minimal-test bisection).
+/* klor_face_icon.c not in this build yet -- root cause of the static-display
+ * bug (LV_Z_MEM_POOL_SIZE Kconfig mixup, see klor_left.conf) is fixed, but
+ * keeping the face icon out for one more round since it's a separate
+ * image-asset risk not yet exercised on the fixed memory pool.
  * LV_IMG_DECLARE(klor_face_icon); */
 
 /* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
@@ -118,24 +121,22 @@ static void klor_central_render(struct klor_central_state state) {
     struct klor_central_widget *widget;
 
     last_state = state;
-    /* klor_display_power.c not in this build yet (minimal-test bisection) --
-     * stock ZMK idle-blank handles the panel for now. */
+    /* klor_display_power.c not in this build yet -- stock ZMK idle-blank
+     * handles the panel for now. */
 
-    /* minimal-test branch: BT-flash timer disabled to bisect the BT/USB
-     * failure. It calls klor_central_render() recursively from its own
-     * k_work, on a periodic k_timer, outside ZMK_DISPLAY_WIDGET_LISTENER's
-     * normal render path/serialization -- a reentrancy suspect. */
     if (state.bt_connected != bt_was_connected) {
         bt_was_connected = state.bt_connected;
         bt_flash_on = true;
+        if (!state.bt_connected) {
+            k_timer_start(&bt_flash_timer, K_MSEC(500), K_MSEC(500));
+        } else {
+            k_timer_stop(&bt_flash_timer);
+        }
     }
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
         klor_badge_set_active(&widget->bt_badge, state.bt_connected ? true : bt_flash_on);
 
-        /* minimal-test branch: profile_badge/bat_badge/pct_badge/layer_label
-         * not created right now (see klor_central_widget_init()) -- these
-         * would be uninitialized-pointer derefs otherwise.
         if (state.bt_connected) {
             char profile_buf[2];
             snprintf(profile_buf, sizeof(profile_buf), "%d", state.profile_index);
@@ -158,11 +159,7 @@ static void klor_central_render(struct klor_central_state state) {
         } else {
             lv_label_set_text(widget->layer_label, "");
         }
-        */
 
-        /* minimal-test branch: mod_badges/layer_badges not created right
-         * now (see klor_central_widget_init()) -- these would be
-         * uninitialized-pointer derefs otherwise.
         for (int i = 0; i < 4; i++) {
             const char *text;
             uint32_t bit;
@@ -174,7 +171,6 @@ static void klor_central_render(struct klor_central_state state) {
         for (int i = 0; i < 9; i++) {
             klor_badge_set_active(&widget->layer_badges[i], state.active_layer == i);
         }
-        */
     }
 }
 
@@ -211,13 +207,6 @@ static void bt_flash_work_cb(struct k_work *work) {
  * (KLOR_MAC_LAYER_A/B swap Ctrl<->Gui on the homerow only; positions 12
  * and 17 don't swap; update this table if those bindings ever move): */
 
-#if 0
-/* minimal-test branch: disabled to bisect the BT/USB failure introduced by
- * this file. Most complex/stateful part of the widget -- 8 k_work_delayable
- * timers armed/cancelled from a position_state_changed listener, running
- * alongside the BT-flash k_timer and badge rendering. Top suspect for a
- * real runtime bug (race/reentrancy) vs. the rest of the file, which is
- * plain LVGL object creation already proven safe in the single-badge test. */
 struct shadow_mod_slot {
     uint32_t position;
     uint32_t tapping_term_ms;
@@ -283,8 +272,8 @@ static void shadow_slot_timeout(struct k_work *work) {
     slot->fired = true;
     shadow_mods |= slot->applied_bit;
     submit_shadow_render();
-    /* klor_modifier_sync_central.c not in this build yet (minimal-test
-     * bisection) -- no peripheral to forward mods to regardless. */
+    /* klor_modifier_sync_central.c not in this build yet -- no peripheral to
+     * forward mods to regardless. */
 }
 
 static int position_event_cb(const zmk_event_t *eh) {
@@ -317,41 +306,33 @@ static int position_event_cb(const zmk_event_t *eh) {
 
 ZMK_LISTENER(klor_central_position, position_event_cb);
 ZMK_SUBSCRIPTION(klor_central_position, zmk_position_state_changed);
-#endif /* shadow mod tracking disabled */
 
 /* Shadow-tracked mods, 8-bit HID shape (bits 0-3 left, 4-7 right) - used by
  * klor_modifier_sync_central.c to forward the right-hand nibble to the
- * peripheral. Always 0 while shadow-tracking is disabled above. */
+ * peripheral. */
 uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
 
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
-    /* minimal-test branch: hardcoded dummy state to bisect the BT/USB
-     * failure. step 5's screen never called any ZMK keymap, battery, usb,
-     * or ble API -- none of that's been exercised by any working test so
-     * far. If one of these isn't safe to call this early in boot (before
-     * some subsystem finishes initializing), that would crash independent
-     * of badge count entirely. */
+    uint8_t layer = zmk_keymap_highest_layer_active();
+    bool mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
+                    zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
+
     return (struct klor_central_state){
-        .layer_label = "TEST",
-        .active_layer = 0,
-        .mac_mode = false,
-        .battery_level = 100,
-        .charging = false,
-        .bt_connected = false,
-        .profile_index = 0,
+        .layer_label = "",
+        .active_layer = layer,
+        .mac_mode = mac_mode,
+        .battery_level = zmk_battery_state_of_charge(),
+        .charging = zmk_usb_is_powered(),
+        .bt_connected = zmk_ble_active_profile_is_connected(),
+        .profile_index = zmk_ble_active_profile_index(),
     };
 }
 
-/* minimal-test branch: event subscriptions disabled to bisect the BT/USB
- * failure. This is the first widget in the bisection that subscribes to
- * live ZMK events and re-renders on each one -- step 5's test screen only
- * ever drew once at boot. zmk_ble_active_profile_changed fires exactly
- * when BT is trying to connect, so a crash in that specific re-render path
- * would explain why BT specifically never comes up. The macro's one-time
- * init call (widget_klor_central_init(), below) still populates the
- * display once; nothing re-triggers it after that now. */
 ZMK_DISPLAY_WIDGET_LISTENER(widget_klor_central, struct klor_central_state,
                             klor_central_render, klor_central_get_state)
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_layer_state_changed);
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_battery_state_changed);
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed);
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
@@ -370,10 +351,6 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    /* minimal-test branch: down to exactly 1 badge, matching step 5's scale,
-     * but still through widget->obj + the real ZMK_DISPLAY_WIDGET_LISTENER
-     * macro/sys_slist mechanism below. If this still fails, the bug is in
-     * that infrastructure, not badge/row volume.
     lv_obj_t *status_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
     lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
@@ -385,43 +362,29 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_align(widget->layer_label, LV_ALIGN_TOP_LEFT, 0, 16);
 
     klor_rule(widget->obj, 128, 0, 27);
-    */
 
     lv_obj_t *bt_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
     lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
     klor_badge_create(&widget->bt_badge, bt_row, "BT");
-    /* minimal-test branch: dummy test object (bare lv_obj_create + label)
-     * removed -- it already served its purpose isolating the font/scrollable
-     * variables. Back down to exactly bt_badge here; klor_status_screen.c's
-     * canary label is now the only 2nd label, so this matches the label
-     * count of the last confirmed-working state (widget_klor_central_init +
-     * bt_badge) while testing a canary added outside this file instead. */
+    klor_badge_create(&widget->profile_badge, bt_row, "...");
 
-    /* minimal-test branch: mod-badge row + layer-number row disabled to
-     * bisect the BT/USB failure -- cutting badge count from ~17 down to the
-     * 4-badge status strip, closer to the proven-working single-badge test.
     lv_obj_t *mod_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
     lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 31);
     for (int i = 0; i < 4; i++) {
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
-    */
 
-    /* klor_face_icon.c not in this build yet (minimal-test bisection).
+    /* klor_face_icon.c not in this build yet, see the LV_IMG_DECLARE comment
+     * above.
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
     lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 31);
     */
 
-    /* minimal-test branch: second rule line disabled too, see status_row
-     * comment above.
     klor_rule(widget->obj, 128, 0, 49);
-    */
 
-    /* minimal-test branch: layer-number row disabled, see mod-badge row
-     * comment above.
     lv_obj_t *layer_row = klor_badge_row_create(widget->obj, 128, 11, LV_FLEX_ALIGN_START);
     lv_obj_align(layer_row, LV_ALIGN_TOP_LEFT, 0, 53);
     for (int i = 0; i < 9; i++) {
@@ -429,15 +392,12 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         snprintf(buf, sizeof(buf), "%d", i + 1);
         klor_badge_create(&widget->layer_badges[i], layer_row, buf);
     }
-    */
 
     sys_slist_append(&widgets, &widget->node);
 
-#if 0
     for (size_t i = 0; i < SHADOW_SLOT_COUNT; i++) {
         k_work_init_delayable(&shadow_slots[i].work, shadow_slot_timeout);
     }
-#endif
 
     widget_klor_central_init();
 
