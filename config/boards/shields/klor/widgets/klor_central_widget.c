@@ -135,18 +135,15 @@ static void klor_central_render(struct klor_central_state state) {
     }
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        klor_badge_set_active(&widget->bt_badge, state.bt_connected ? true : bt_flash_on);
-
+        char bt_buf[8];
         if (state.bt_connected) {
-            char profile_buf[2];
-            snprintf(profile_buf, sizeof(profile_buf), "%d", state.profile_index);
-            klor_badge_set_text(&widget->profile_badge, profile_buf);
-            klor_badge_set_active(&widget->profile_badge, true);
+            snprintf(bt_buf, sizeof(bt_buf), "BT%d", state.profile_index);
+            klor_badge_set_text(&widget->bt_badge, bt_buf);
+            klor_badge_set_active(&widget->bt_badge, true);
         } else {
-            char dots_buf[4];
-            snprintf(dots_buf, sizeof(dots_buf), "%.*s", connecting_dots, "...");
-            klor_badge_set_text(&widget->profile_badge, dots_buf);
-            klor_badge_set_active(&widget->profile_badge, bt_flash_on);
+            snprintf(bt_buf, sizeof(bt_buf), "BT%.*s", connecting_dots, "...");
+            klor_badge_set_text(&widget->bt_badge, bt_buf);
+            klor_badge_set_active(&widget->bt_badge, bt_flash_on);
         }
 
         klor_badge_set_text(&widget->bat_badge, state.charging ? "CHG" : "BAT");
@@ -176,7 +173,13 @@ static void klor_central_render(struct klor_central_state state) {
 
 static void bt_flash_work_cb(struct k_work *work) {
     bt_flash_on = !bt_flash_on;
-    connecting_dots = (connecting_dots % 3) + 1;
+    /* Only advance the dot count on the "on" transition, not every tick --
+     * otherwise it advances twice as fast as the blink and the visible (lit)
+     * frames only ever land on alternating counts (1, 3, 2, 1, 3, 2, ...)
+     * instead of a clean 1, 2, 3 cycle. */
+    if (bt_flash_on) {
+        connecting_dots = (connecting_dots % 3) + 1;
+    }
     klor_central_render(last_state);
 }
 
@@ -363,11 +366,8 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
 
     klor_rule(widget->obj, 128, 0, 27);
 
-    lv_obj_t *bt_row =
-        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_START);
-    lv_obj_align(bt_row, LV_ALIGN_TOP_LEFT, 0, 1);
-    klor_badge_create(&widget->bt_badge, bt_row, "BT");
-    klor_badge_create(&widget->profile_badge, bt_row, "...");
+    klor_badge_create(&widget->bt_badge, widget->obj, "BT...");
+    lv_obj_align(widget->bt_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
     lv_obj_t *mod_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
