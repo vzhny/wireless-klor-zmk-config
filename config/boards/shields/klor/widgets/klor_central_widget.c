@@ -356,9 +356,15 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
 
     lv_obj_t *status_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
-    lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
     klor_badge_create(&widget->bat_badge, status_row, "BAT");
     klor_badge_create(&widget->pct_badge, status_row, "100%");
+    /* Align after the children exist -- lv_obj_align() is a one-time
+     * position command, not a live constraint, so aligning an empty
+     * LV_SIZE_CONTENT row to TOP_RIGHT anchors it at its (zero) width at
+     * call time; growing afterward as badges are added pushed the row's
+     * left edge (bat_badge, "CHG" when charging) off-screen instead of
+     * growing leftward from the right edge like intended. */
+    lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
     widget->layer_label = lv_label_create(widget->obj);
     lv_obj_set_style_text_font(widget->layer_label, &pixel_operator_mono_large, LV_PART_MAIN);
