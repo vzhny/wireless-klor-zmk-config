@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/ble_active_profile_changed.h>
 #include <zmk/events/position_state_changed.h>
+#include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/keymap.h>
 #include <zmk/battery.h>
 #include <zmk/ble.h>
@@ -151,7 +152,9 @@ static void klor_central_render(struct klor_central_state state) {
         if (state.bt_connected) {
             snprintf(bt_buf, sizeof(bt_buf), "BT%d", state.profile_index);
             klor_badge_set_text(&widget->bt_badge, bt_buf);
-            klor_badge_set_active(&widget->bt_badge, true);
+            /* Connected is the steady/idle state -- only the searching
+             * blink below should invert this badge. */
+            klor_badge_set_active(&widget->bt_badge, false);
         } else {
             snprintf(bt_buf, sizeof(bt_buf), "BT%.*s", connecting_dots, "...");
             klor_badge_set_text(&widget->bt_badge, bt_buf);
@@ -343,6 +346,10 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_klor_central, struct klor_central_state,
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_layer_state_changed);
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_battery_state_changed);
 ZMK_SUBSCRIPTION(widget_klor_central, zmk_ble_active_profile_changed);
+/* Without this, the CHG/BAT badge only picks up a USB plug/unplug once some
+ * other subscribed event (layer change, battery tick, BT profile change)
+ * happens to fire next -- plugging in doesn't relabel the badge on its own. */
+ZMK_SUBSCRIPTION(widget_klor_central, zmk_usb_conn_state_changed);
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
@@ -376,14 +383,18 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
      * growing leftward from the right edge like intended. */
     lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
-    klor_rule(widget->obj, 128, 0, 11);
+    /* Status row badges are ~15px tall (pixel_operator_mono line_height 13 +
+     * 1px top/bottom padding, klor_widgets_util.c), both starting at y=1 --
+     * this rule and everything below it must clear y=16, or it clips into
+     * the status row. */
+    klor_rule(widget->obj, 128, 0, 17);
 
     klor_badge_create(&widget->bt_badge, widget->obj, "BT...");
     lv_obj_align(widget->bt_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
     lv_obj_t *mod_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
-    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 15);
+    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 20);
     for (int i = 0; i < 4; i++) {
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
@@ -392,13 +403,13 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
      * above.
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
-    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 15);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 20);
     */
 
-    klor_rule(widget->obj, 128, 0, 33);
+    klor_rule(widget->obj, 128, 0, 38);
 
     klor_badge_create(&widget->layer_name_badge, widget->obj, "Base");
-    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 37);
+    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 41);
 
     sys_slist_append(&widgets, &widget->node);
 

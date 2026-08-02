@@ -75,7 +75,10 @@ static void klor_peripheral_render(struct k_work *work) {
     struct klor_peripheral_widget *widget;
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
-        klor_badge_set_active(&widget->link_badge, widget_state.link_connected);
+        /* Connected is the steady/idle state -- like the central screen's BT
+         * badge, this should never invert just for being linked. Only
+         * mod_badges below invert, and only while actually held. */
+        klor_badge_set_active(&widget->link_badge, false);
 
         klor_badge_set_text(&widget->bat_badge, widget_state.charging ? "CHG" : "BAT");
         char pct_buf[6];
