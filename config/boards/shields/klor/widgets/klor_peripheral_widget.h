@@ -14,15 +14,6 @@
 struct klor_peripheral_widget {
     sys_snode_t node;
     lv_obj_t *obj;
-    /* Right-anchored LV_SIZE_CONTENT rows -- re-aligned on every render, not
-     * just at init, since their children's text/font can change width
-     * (bat_badge: BAT vs the bolt icon; pct_badge: digit count; mod_badges:
-     * Win vs Mac labels), and lv_obj_align() is a one-time position command
-     * (see the alignment gotcha this project keeps hitting). Without
-     * re-aligning, a width change shifts the row's right edge past the
-     * panel edge instead of staying flush. */
-    lv_obj_t *status_row;
-    lv_obj_t *mod_row;
     struct klor_badge link_badge;
     struct klor_badge bat_badge;
     struct klor_badge pct_badge;

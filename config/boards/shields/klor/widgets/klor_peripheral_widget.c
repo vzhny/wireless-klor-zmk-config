@@ -27,6 +27,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/event_manager.h>
 #include <zmk/events/battery_state_changed.h>
 #include <zmk/events/split_peripheral_status_changed.h>
+#include <zmk/events/usb_conn_state_changed.h>
 #include <zmk/battery.h>
 #include <zmk/usb.h>
 #include <zmk/split/bluetooth/peripheral.h>
@@ -100,12 +101,6 @@ static void klor_peripheral_render(struct k_work *work) {
         char pct_buf[6];
         snprintf(pct_buf, sizeof(pct_buf), "%d%%", widget_state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
-        /* bat_badge/pct_badge just changed width (icon vs text, digit
-         * count) -- status_row is LV_SIZE_CONTENT and right-anchored, so it
-         * has to be re-aligned every time its content width can change, not
-         * just once at init (see the field comment in
-         * klor_peripheral_widget.h). */
-        lv_obj_align(widget->status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
         for (int i = 0; i < 4; i++) {
             const char *text;
@@ -114,7 +109,6 @@ static void klor_peripheral_render(struct k_work *work) {
             klor_badge_set_text(&widget->mod_badges[i], text);
             klor_badge_set_active(&widget->mod_badges[i], (widget_state.r_mods & bit) != 0);
         }
-        lv_obj_align(widget->mod_row, LV_ALIGN_TOP_RIGHT, 0, 20);
 
         klor_badge_set_text(&widget->base_layer_badge, widget_state.colemak_mode ? "COLEMAK"
                                                                                   : "QWERTY");
@@ -159,18 +153,37 @@ static int split_event_cb(const zmk_event_t *eh) {
     return ZMK_EV_EVENT_BUBBLE;
 }
 
+/* Without this, charging only got picked up inside battery_event_cb, which
+ * only fires on a battery tick -- plugging into USB-C doesn't relabel the
+ * BAT badge to the bolt icon on its own, and with no battery installed
+ * (ADC has nothing to report) that tick may not come at all. */
+static int usb_event_cb(const zmk_event_t *eh) {
+    widget_state.charging = zmk_usb_is_powered();
+    request_render();
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
 ZMK_LISTENER(klor_peri_battery, battery_event_cb);
 ZMK_SUBSCRIPTION(klor_peri_battery, zmk_battery_state_changed);
 
 ZMK_LISTENER(klor_peri_split, split_event_cb);
 ZMK_SUBSCRIPTION(klor_peri_split, zmk_split_peripheral_status_changed);
 
+ZMK_LISTENER(klor_peri_usb, usb_event_cb);
+ZMK_SUBSCRIPTION(klor_peri_usb, zmk_usb_conn_state_changed);
+
 /* ── Init ────────────────────────────────────────────────────────────── */
 
 static lv_obj_t *klor_rule(lv_obj_t *parent, lv_coord_t w, lv_coord_t x, lv_coord_t y) {
     lv_obj_t *line = lv_obj_create(parent);
     lv_obj_set_size(line, w, 1);
-    lv_obj_set_style_bg_color(line, lv_color_white(), LV_PART_MAIN);
+    /* Physical panel has inversion-on set (klor_common.dtsi), which flips
+     * these explicit fill colors same as klor_badge_create() -- this was
+     * lv_color_white() here, which nets out to a physically BLACK line
+     * (invisible against the idle black background). klor_central_widget.c's
+     * copy of this same helper already had the correct swap; this one
+     * didn't, which is why the right screen's separators were invisible. */
+    lv_obj_set_style_bg_color(line, lv_color_black(), LV_PART_MAIN);
     lv_obj_set_style_bg_opa(line, LV_OPA_COVER, LV_PART_MAIN);
     lv_obj_set_style_border_width(line, 0, LV_PART_MAIN);
     lv_obj_set_style_radius(line, 0, LV_PART_MAIN);
@@ -191,37 +204,49 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
     klor_badge_create(&widget->link_badge, widget->obj, "LINKED");
     lv_obj_align(widget->link_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
-    widget->status_row =
-        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
-    klor_badge_create(&widget->bat_badge, widget->status_row, "BAT");
-    klor_badge_create(&widget->pct_badge, widget->status_row, "100%");
-    /* Align after the children exist -- lv_obj_align() is a one-time
-     * position command, not a live constraint, so aligning an empty
-     * LV_SIZE_CONTENT row to TOP_RIGHT anchors it at its (zero) width at
-     * call time; growing afterward as badges are added pushes the row's
-     * right edge past the panel edge instead of growing leftward from it. */
-    lv_obj_align(widget->status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
+    /* Fixed-width (== panel width), not LV_SIZE_CONTENT -- a content-sized
+     * row's own box has to be re-aligned every time a child's width changes
+     * (bat_badge: BAT vs the bolt icon; pct_badge: digit count), since
+     * lv_obj_align() is a one-time position command, not a live constraint.
+     * A row that's already as wide as the panel never needs to move again;
+     * LV_FLEX_ALIGN_END packs its children flush against the right edge
+     * regardless of their combined width, so this is a one-time alignment
+     * that stays correct through every future content change. The row's own
+     * background is transparent, so the unused space to its left is
+     * invisible and doesn't overlap link_badge visually. */
+    lv_obj_t *status_row =
+        klor_badge_row_create(widget->obj, 128, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
+    klor_badge_create(&widget->bat_badge, status_row, "BAT");
+    klor_badge_create(&widget->pct_badge, status_row, "100%");
+    lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
-    klor_rule(widget->obj, 128, 0, 17);
+    /* y=19 (not 17) leaves a bit more breathing room below the status
+     * badges than a bare 1px gap -- matches klor_central_widget.c. */
+    klor_rule(widget->obj, 128, 0, 19);
 
-    /* Row 2 -- modifier badges only, mirrored order (right-aligned). */
-    widget->mod_row =
-        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_END);
+    /* Row 2 -- modifier badges only, mirrored order (right-aligned). Same
+     * fixed-width-row reasoning as status_row above -- this is also what
+     * was silently dropping 3 of the 4 badges off-panel before: a
+     * LV_SIZE_CONTENT row anchored TOP_RIGHT still needs its final content
+     * width to compute where its left edge lands, and by the time
+     * lv_obj_align() ran here, LVGL's flex layout for the just-added
+     * badges hadn't necessarily settled yet. A fixed-width row sidesteps
+     * that entirely -- its own position never depends on its children. */
+    lv_obj_t *mod_row = klor_badge_row_create(widget->obj, 128, 16, LV_FLEX_ALIGN_END);
     for (int i = 0; i < 4; i++) {
-        klor_badge_create(&widget->mod_badges[i], widget->mod_row, "SFT");
+        klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
-    /* Same align-after-children rule as status_row above. */
-    lv_obj_align(widget->mod_row, LV_ALIGN_TOP_RIGHT, 0, 20);
+    lv_obj_align(mod_row, LV_ALIGN_TOP_RIGHT, 0, 22);
 
-    klor_rule(widget->obj, 128, 0, 38);
+    klor_rule(widget->obj, 128, 0, 40);
 
     /* Row 3 -- KLOR face icon bottom-left, active base layer bottom-right. */
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
-    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_LEFT, 0, 41);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_LEFT, 0, 43);
 
     klor_badge_create(&widget->base_layer_badge, widget->obj, "QWERTY");
-    lv_obj_align(widget->base_layer_badge.box, LV_ALIGN_TOP_RIGHT, 0, 41);
+    lv_obj_align(widget->base_layer_badge.box, LV_ALIGN_TOP_RIGHT, 0, 43);
 
     sys_slist_append(&widgets, &widget->node);
 

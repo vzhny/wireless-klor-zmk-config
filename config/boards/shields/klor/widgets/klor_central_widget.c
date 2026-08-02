@@ -173,11 +173,6 @@ static void klor_central_render(struct klor_central_state state) {
         char pct_buf[6];
         snprintf(pct_buf, sizeof(pct_buf), "%d%%", state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
-        /* bat_badge/pct_badge just changed width (icon vs text, digit count) --
-         * status_row is LV_SIZE_CONTENT and right-anchored, so it has to be
-         * re-aligned every time its content width can change, not just once
-         * at init (see the field comment in klor_central_widget.h). */
-        lv_obj_align(widget->status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
         for (int i = 0; i < 4; i++) {
             const char *text;
@@ -384,31 +379,35 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    widget->status_row =
-        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
-    lv_obj_t *status_row = widget->status_row;
+    /* Fixed-width (== panel width), not LV_SIZE_CONTENT -- a content-sized
+     * row's own box has to be re-aligned every time a child's width changes
+     * (bat_badge: BAT vs the bolt icon; pct_badge: digit count), since
+     * lv_obj_align() is a one-time position command, not a live constraint.
+     * A row that's already as wide as the panel never needs to move again;
+     * LV_FLEX_ALIGN_END packs its children flush against the right edge
+     * regardless of their combined width, so this is a one-time alignment
+     * that stays correct through every future content change. The row's own
+     * background is transparent, so the unused space to its left is
+     * invisible and doesn't overlap bt_badge visually. */
+    lv_obj_t *status_row =
+        klor_badge_row_create(widget->obj, 128, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
     klor_badge_create(&widget->bat_badge, status_row, "BAT");
     klor_badge_create(&widget->pct_badge, status_row, "100%");
-    /* Align after the children exist -- lv_obj_align() is a one-time
-     * position command, not a live constraint, so aligning an empty
-     * LV_SIZE_CONTENT row to TOP_RIGHT anchors it at its (zero) width at
-     * call time; growing afterward as badges are added pushed the row's
-     * left edge (bat_badge, "CHG" when charging) off-screen instead of
-     * growing leftward from the right edge like intended. */
     lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
     /* Status row badges are ~15px tall (pixel_operator_mono line_height 13 +
      * 1px top/bottom padding, klor_widgets_util.c), both starting at y=1 --
      * this rule and everything below it must clear y=16, or it clips into
-     * the status row. */
-    klor_rule(widget->obj, 128, 0, 17);
+     * the status row. y=19 (not 17) leaves a bit more breathing room below
+     * the badges than a bare 1px gap. */
+    klor_rule(widget->obj, 128, 0, 19);
 
     klor_badge_create(&widget->bt_badge, widget->obj, "BT...");
     lv_obj_align(widget->bt_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
     lv_obj_t *mod_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_START);
-    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 20);
+    lv_obj_align(mod_row, LV_ALIGN_TOP_LEFT, 0, 22);
     for (int i = 0; i < 4; i++) {
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
@@ -417,13 +416,13 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
      * above.
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
-    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 20);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 22);
     */
 
-    klor_rule(widget->obj, 128, 0, 38);
+    klor_rule(widget->obj, 128, 0, 40);
 
     klor_badge_create(&widget->layer_name_badge, widget->obj, "Base");
-    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 41);
+    lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 43);
 
     sys_slist_append(&widgets, &widget->node);
 
