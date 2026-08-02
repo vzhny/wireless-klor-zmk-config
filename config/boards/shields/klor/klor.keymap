@@ -61,18 +61,21 @@
     conditional_layers {
         compatible = "zmk,conditional-layers";
 
-        /* Holding NUM (mo 4) + FUNC (mo 8) simultaneously activates ADMIN.
+        /* Holding NUM (mo 4) + FUNC (mo 7) simultaneously activates ADMIN (8).
          * Costs no dedicated thumb. Mac toggle in ADMIN resets on power cycle —
-         * keyboard always boots in Windows mode, which is intended. */
+         * keyboard always boots in Windows mode, which is intended.
+         *
+         * ADMIN (then-layer) must be numbered higher than every layer in
+         * if-layers -- see admin_layer's comment in the keymap block for why. */
 
         admin {
-            if-layers = <4 8>;
-            then-layer = <7>;
+            if-layers = <4 7>;
+            then-layer = <8>;
         };
 
         admin_leftonly {
             if-layers = <4 5>;
-            then-layer = <7>;
+            then-layer = <8>;
         };
     };
 
@@ -286,7 +289,29 @@
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
-        /* ADMIN — conditional: NUM(4) + FUNC(8) held simultaneously.
+        func_layer {
+            label = "Function Keys";
+            bindings = <
+&kp F1   &kp F2   &kp F3  &kp F4  &kp F5   &trans  &trans  &trans  &trans  &trans
+&kp F6   &kp F7   &kp F8  &kp F9  &kp F10  &trans  &trans  &trans  &trans  &trans
+&kp F11  &kp F12  &trans  &trans  &trans  &trans   &trans  &trans  &trans  &trans  &trans  &trans
+                  &trans  &trans  &trans   &trans  &trans  &trans
+            >;
+            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
+        };
+
+        /* ADMIN — conditional: NUM(4) + FUNC(7) held simultaneously. Must be
+         * the highest-numbered layer in this file: ZMK resolves each key
+         * position from the highest *active* layer down, taking the first
+         * non-transparent binding it finds, regardless of which layer is
+         * "conditional" -- if ADMIN sat below FUNC (its own trigger), FUNC's
+         * real F-key bindings at the same row0/row1 positions would always
+         * win the instant the chord fires, making ADMIN's own bindings
+         * unreachable. This was a real bug (not just a display quirk): the
+         * OLED's "highest active layer" name display surfaced it as
+         * permanently showing "Func" while holding the chord, matching what
+         * was actually happening -- FUNC's bindings really were winning.
+         *
          * Top row left: BT device select 0-3, BT clear.
          * Top row right: sys_reset, bootloader.
          * Homerow left: tog 1 = Qwerty Mac, tog 2 = Colemak Win, tog 3 = Colemak Mac.
@@ -300,17 +325,6 @@
 &tog 1        &tog 2        &tog 3        &trans        &trans      &trans      &trans       &trans  &trans  &trans
 &trans        &trans        &trans        &trans        &trans  &trans   &trans    &trans       &trans  &trans  &trans  &trans
                             &trans        &trans        &trans      &trans          &trans       &trans
-            >;
-            sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
-        };
-
-        func_layer {
-            label = "Function Keys";
-            bindings = <
-&kp F1   &kp F2   &kp F3  &kp F4  &kp F5   &trans  &trans  &trans  &trans  &trans
-&kp F6   &kp F7   &kp F8  &kp F9  &kp F10  &trans  &trans  &trans  &trans  &trans
-&kp F11  &kp F12  &trans  &trans  &trans  &trans   &trans  &trans  &trans  &trans  &trans  &trans
-                  &trans  &trans  &trans   &trans  &trans  &trans
             >;
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };

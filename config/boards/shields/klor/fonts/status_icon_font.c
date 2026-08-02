@@ -1,7 +1,11 @@
 /*******************************************************************************
- * Size: 18 px
+ * Size: 13 px
  * Bpp: 1
- * Opts: --size 18 --bpp 1 --format lvgl --no-compress --font JetBrainsMonoNLNerdFont-Regular.ttf -r 0xF294,0xF240,0xF241,0xF242,0xF243,0xF244,0xF0E7 --lv-font-name status_icon_font -o config/widgets/fonts/status_icon_font.c
+ * Opts: --size 13 --bpp 1 --format lvgl --no-compress --font JetBrainsMonoNLNerdFont-Regular.ttf -r 0xF294,0xF240,0xF241,0xF242,0xF243,0xF244,0xF0E7 --lv-font-name status_icon_font -o config/boards/shields/klor/fonts/status_icon_font.c
+ *
+ * Resized down from the original 18px conversion (still 13px == pixel_operator_mono's
+ * line_height) -- 18px made the bolt/charging glyph tall enough to clip into
+ * the rule below the status row on both screens.
  ******************************************************************************/
 
 #include <lvgl.h>
@@ -18,46 +22,33 @@
 
 /*Store the image of the glyphs*/
 static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
-    /* U+F0E7 "" */
-    0x0, 0x40, 0xe, 0x0, 0xf0, 0xf, 0x80, 0xf8,
-    0xf, 0xc0, 0xfc, 0xf, 0xfe, 0xff, 0xf3, 0xff,
-    0x83, 0xf8, 0x1f, 0x81, 0xf8, 0xf, 0x0, 0x70,
-    0x7, 0x0, 0x30, 0x0,
+    /* U+F0E7 "" */
+    0x2, 0x3, 0x3, 0x83, 0xc3, 0xc3, 0xe3, 0xfe,
+    0x3e, 0x1e, 0x1e, 0xe, 0x6, 0x0,
 
-    /* U+F240 "" */
-    0x7f, 0xff, 0x9f, 0xff, 0xfb, 0x0, 0x3, 0x60,
-    0x0, 0x6d, 0xff, 0xcf, 0xbf, 0xf9, 0xf7, 0xff,
-    0x3e, 0xff, 0xe7, 0xc0, 0x0, 0xdf, 0xff, 0xf9,
-    0xff, 0xfe, 0x0,
+    /* U+F240 "" */
+    0xff, 0xfb, 0x0, 0x6d, 0xfd, 0xf7, 0xf7, 0xdf,
+    0xdf, 0x0, 0x67, 0xff, 0x0,
 
-    /* U+F241 "" */
-    0x7f, 0xff, 0x9f, 0xff, 0xfb, 0x0, 0x3, 0x60,
-    0x0, 0x6d, 0xfe, 0xf, 0xbf, 0xc1, 0xf7, 0xf8,
-    0x3e, 0xff, 0x7, 0xc0, 0x0, 0xdf, 0xff, 0xf9,
-    0xff, 0xfe, 0x0,
+    /* U+F241 "" */
+    0xff, 0xfb, 0x0, 0x6d, 0xf1, 0xf7, 0xc7, 0xdf,
+    0x1f, 0x0, 0x67, 0xff, 0x0,
 
-    /* U+F242 "" */
-    0x7f, 0xff, 0x9f, 0xff, 0xfb, 0x0, 0x3, 0x60,
-    0x0, 0x6d, 0xf8, 0xf, 0xbf, 0x1, 0xf7, 0xe0,
-    0x3e, 0xfc, 0x7, 0xc0, 0x0, 0xdf, 0xff, 0xf9,
-    0xff, 0xfe, 0x0,
+    /* U+F242 "" */
+    0xff, 0xfb, 0x0, 0x6d, 0xe1, 0xf7, 0x87, 0xde,
+    0x1f, 0x0, 0x67, 0xff, 0x0,
 
-    /* U+F243 "" */
-    0x7f, 0xff, 0x9f, 0xff, 0xfb, 0x0, 0x3, 0x60,
-    0x0, 0x6d, 0xc0, 0xf, 0xb8, 0x1, 0xf7, 0x0,
-    0x3e, 0xe0, 0x7, 0xc0, 0x0, 0xdf, 0xff, 0xf9,
-    0xff, 0xfe, 0x0,
+    /* U+F243 "" */
+    0xff, 0xfb, 0x0, 0x6d, 0x81, 0xf6, 0x7, 0xd8,
+    0x1f, 0x0, 0x67, 0xff, 0x0,
 
-    /* U+F244 "" */
-    0x7f, 0xff, 0x9f, 0xff, 0xfb, 0x0, 0x3, 0x60,
-    0x0, 0x6c, 0x0, 0xf, 0x80, 0x1, 0xf0, 0x0,
-    0x3e, 0x0, 0x7, 0xc0, 0x0, 0xdf, 0xff, 0xf9,
-    0xff, 0xfe, 0x0,
+    /* U+F244 "" */
+    0xff, 0xfb, 0x0, 0x6c, 0x1, 0xf0, 0x7, 0xc0,
+    0x1f, 0x0, 0x67, 0xff, 0x0,
 
-    /* U+F294 "" */
-    0x0, 0x8, 0xc, 0xe, 0x4b, 0xeb, 0x7e, 0x3c,
-    0x18, 0x1c, 0x3e, 0x6b, 0xcb, 0xe, 0xc, 0x8,
-    0x0
+    /* U+F294 "" */
+    0x0, 0x20, 0x60, 0xa5, 0x47, 0x4, 0x1c, 0x54,
+    0x28, 0x60, 0x80
 };
 
 
@@ -67,13 +58,13 @@ static LV_ATTRIBUTE_LARGE_CONST const uint8_t glyph_bitmap[] = {
 
 static const lv_font_fmt_txt_glyph_dsc_t glyph_dsc[] = {
     {.bitmap_index = 0, .adv_w = 0, .box_w = 0, .box_h = 0, .ofs_x = 0, .ofs_y = 0} /* id = 0 reserved */,
-    {.bitmap_index = 0, .adv_w = 173, .box_w = 13, .box_h = 17, .ofs_x = 0, .ofs_y = -2},
-    {.bitmap_index = 28, .adv_w = 173, .box_w = 19, .box_h = 11, .ofs_x = 0, .ofs_y = 1},
-    {.bitmap_index = 55, .adv_w = 173, .box_w = 19, .box_h = 11, .ofs_x = 0, .ofs_y = 1},
-    {.bitmap_index = 82, .adv_w = 173, .box_w = 19, .box_h = 11, .ofs_x = 0, .ofs_y = 1},
-    {.bitmap_index = 109, .adv_w = 173, .box_w = 19, .box_h = 11, .ofs_x = 0, .ofs_y = 1},
-    {.bitmap_index = 136, .adv_w = 173, .box_w = 19, .box_h = 11, .ofs_x = 0, .ofs_y = 1},
-    {.bitmap_index = 163, .adv_w = 173, .box_w = 8, .box_h = 17, .ofs_x = 1, .ofs_y = -2}
+    {.bitmap_index = 0, .adv_w = 125, .box_w = 9, .box_h = 12, .ofs_x = 0, .ofs_y = -1},
+    {.bitmap_index = 14, .adv_w = 125, .box_w = 14, .box_h = 7, .ofs_x = 0, .ofs_y = 1},
+    {.bitmap_index = 27, .adv_w = 125, .box_w = 14, .box_h = 7, .ofs_x = 0, .ofs_y = 1},
+    {.bitmap_index = 40, .adv_w = 125, .box_w = 14, .box_h = 7, .ofs_x = 0, .ofs_y = 1},
+    {.bitmap_index = 53, .adv_w = 125, .box_w = 14, .box_h = 7, .ofs_x = 0, .ofs_y = 1},
+    {.bitmap_index = 66, .adv_w = 125, .box_w = 14, .box_h = 7, .ofs_x = 0, .ofs_y = 1},
+    {.bitmap_index = 79, .adv_w = 125, .box_w = 7, .box_h = 12, .ofs_x = 1, .ofs_y = -1}
 };
 
 /*---------------------
@@ -137,13 +128,13 @@ lv_font_t status_icon_font = {
 #endif
     .get_glyph_dsc = lv_font_get_glyph_dsc_fmt_txt,    /*Function pointer to get glyph's data*/
     .get_glyph_bitmap = lv_font_get_bitmap_fmt_txt,    /*Function pointer to get glyph's bitmap*/
-    .line_height = 17,          /*The maximum line height required by the font*/
-    .base_line = 2,             /*Baseline measured from the bottom of the line*/
+    .line_height = 12,          /*The maximum line height required by the font*/
+    .base_line = 1,             /*Baseline measured from the bottom of the line*/
 #if !(LVGL_VERSION_MAJOR == 6 && LVGL_VERSION_MINOR == 0)
     .subpx = LV_FONT_SUBPX_NONE,
 #endif
 #if LV_VERSION_CHECK(7, 4, 0) || LVGL_VERSION_MAJOR >= 8
-    .underline_position = -3,
+    .underline_position = -2,
     .underline_thickness = 1,
 #endif
     .dsc = &font_dsc,          /*The custom font data. Will be accessed by `get_glyph_bitmap/dsc` */
@@ -156,4 +147,3 @@ lv_font_t status_icon_font = {
 
 
 #endif /*#if STATUS_ICON_FONT*/
-

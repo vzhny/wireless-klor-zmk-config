@@ -25,19 +25,18 @@ if(CONFIG_ZMK_DISPLAY)
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/pixel_operator_mono_large.c)
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/icon_font.c)
   # Same Nerd Font source, converted separately for status-row-sized glyphs
-  # (18px vs icon_font.c's 24px) -- only the bolt/charging icon is used so
+  # (13px vs icon_font.c's 24px) -- only the bolt/charging icon is used so
   # far, see status_icon_font.h.
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/fonts/status_icon_font.c)
   # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_display_power.c)
+  # Both screens' bottom row shows this now.
+  target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
 
   if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_central_widget.c)
-    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_central.c)
   else()
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_peripheral_widget.c)
-    # klor_peripheral_widget.c's face icon needs this symbol to link.
-    target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_peripheral.c)
   endif()
 endif()

@@ -37,11 +37,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "../fonts/status_icon_font.h"
 #include "../split/klor_modifier_sync.h"
 
-/* klor_face_icon.c not in this build yet -- root cause of the static-display
- * bug (LV_Z_MEM_POOL_SIZE Kconfig mixup, see klor_left.conf) is fixed, but
- * keeping the face icon out for one more round since it's a separate
- * image-asset risk not yet exercised on the fixed memory pool.
- * LV_IMG_DECLARE(klor_face_icon); */
+LV_IMG_DECLARE(klor_face_icon);
 
 /* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
 #define KLOR_MAC_LAYER_A 1
@@ -49,11 +45,14 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 /* Layer index -> display name, matching klor.keymap's layer order exactly
  * (0 qwerty_win, 1 qwerty_mac, 2 colemak_win, 3 colemak_mac, 4 num, 5 nav,
- * 6 sym, 7 admin, 8 func). All four base-layer variants collapse to "Base"
- * -- Win vs Mac and Qwerty vs Colemak aren't shown here. Update this if
- * klor.keymap's layer order ever changes. */
+ * 6 sym, 7 func, 8 admin). All four base-layer variants collapse to "Base"
+ * -- Win vs Mac and Qwerty vs Colemak aren't shown here. Admin must stay
+ * numbered higher than Func (its own conditional-layer trigger) or Func's
+ * non-transparent bindings shadow Admin's at every shared position -- see
+ * klor.keymap's admin_layer comment. Update this if klor.keymap's layer
+ * order ever changes. */
 static const char *layer_names[] = {
-    "Base", "Base", "Base", "Base", "Num", "Nav", "Sym", "Admin", "Func",
+    "Base", "Base", "Base", "Base", "Num", "Nav", "Sym", "Func", "Admin",
 };
 #define LAYER_NAME_COUNT ARRAY_SIZE(layer_names)
 
@@ -413,17 +412,16 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
         klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
     }
 
-    /* klor_face_icon.c not in this build yet, see the LV_IMG_DECLARE comment
-     * above.
-    widget->face_icon = lv_img_create(widget->obj);
-    lv_img_set_src(widget->face_icon, &klor_face_icon);
-    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 22);
-    */
-
     klor_rule(widget->obj, 128, 0, 40);
 
+    /* Row 3 -- active layer name bottom-left, KLOR face icon bottom-right
+     * (mirrors the peripheral screen's face-icon/base-layer-badge row). */
     klor_badge_create(&widget->layer_name_badge, widget->obj, "Base");
     lv_obj_align(widget->layer_name_badge.box, LV_ALIGN_TOP_LEFT, 0, 43);
+
+    widget->face_icon = lv_img_create(widget->obj);
+    lv_img_set_src(widget->face_icon, &klor_face_icon);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 43);
 
     sys_slist_append(&widgets, &widget->node);
 

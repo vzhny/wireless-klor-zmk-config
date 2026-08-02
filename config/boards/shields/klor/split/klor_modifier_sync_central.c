@@ -29,6 +29,10 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 static struct bt_conn *periph_conn;
 static uint16_t mod_char_handle;
+/* Sentinel outside the valid 6-bit payload range, so the first real send
+ * always goes out even if it happens to compute as 0. Declared here (not
+ * next to send_mod_state()) so on_disconnected() below can reset it too. */
+static uint8_t last_sent_payload = 0xFF;
 
 static struct bt_gatt_discover_params discover_params;
 static struct bt_uuid_128 svc_uuid = BT_UUID_INIT_128(BT_UUID_KLOR_MOD_SVC_VAL);
@@ -105,6 +109,11 @@ static void on_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_conn_unref(periph_conn);
     periph_conn = NULL;
     mod_char_handle = 0;
+    /* Force the next post-reconnect send_mod_state() to actually write,
+     * even if current state happens to match whatever was last sent before
+     * the drop -- the peripheral's own state may have reset/gone stale
+     * while disconnected. */
+    last_sent_payload = 0xFF;
 }
 
 BT_CONN_CB_DEFINE(klor_mod_sync_conn_cb) = {
@@ -133,6 +142,17 @@ static void send_mod_state(void) {
     bool is_colemak = zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_A) ||
                       zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_B);
     uint8_t payload = r_mods | (is_mac ? BIT(4) : 0) | (is_colemak ? BIT(5) : 0);
+    /* keycode_event_cb fires on every keycode_state_changed event -- i.e.
+     * every keypress on the whole board, not just modifiers -- so without
+     * this check, typing normally sends a BLE GATT write per keystroke
+     * that never actually changes anything on the peripheral's display.
+     * That extra radio traffic landing in the same real-time window as the
+     * OLED's I2C flush is the likely cause of the "screen tearing"-looking
+     * partial redraws when a mod badge flips. */
+    if (payload == last_sent_payload) {
+        return;
+    }
+    last_sent_payload = payload;
     bt_gatt_write_without_response(periph_conn, mod_char_handle, &payload, 1, false);
 }
 

@@ -3,10 +3,12 @@
 #include <lvgl.h>
 
 /* Ported from wireless-corne-zmk-config's status_icon_font (same source
- * font/conversion, already verified on real hardware there) - converted
- * from JetBrainsMonoNLNerdFont-Regular.ttf via lv_font_conv (--bpp 1
- * --size 18), a separate conversion from icon_font.h's, sized for status-
- * row badges rather than the 28px modifier cells.
+ * font/conversion, already verified on real hardware there), then re-
+ * converted locally from JetBrainsMonoNLNerdFont-Regular.ttf at --size 13
+ * (was 18 in the ported version) -- 18px made ICON_BOLT tall enough to
+ * clip into the rule below the status row on both screens; 13px matches
+ * pixel_operator_mono's line_height so badge height doesn't change
+ * between the text and icon states.
  *
  * Only ICON_BOLT is wired into a widget so far (klor_central_widget.c /
  * klor_peripheral_widget.c's charging indicator) - the BT/battery-level
