@@ -16,7 +16,6 @@
 #include <zmk/keymap.h>
 
 #include "klor_modifier_sync.h"
-#include "../widgets/klor_display_power.h"
 #include "../widgets/klor_central_widget.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
@@ -80,10 +79,6 @@ static void start_discovery(struct k_work *work) {
 }
 
 /* ── BLE connection callbacks ────────────────────────────────────────── */
-/* DEBUG: neutered to isolate whether this connection-callback/GATT-discover
- * code is why BT stopped pairing entirely once config/CMakeLists.txt started
- * actually compiling. Restore once confirmed either way. */
-#if 0
 
 static void on_connected(struct bt_conn *conn, uint8_t err) {
     if (err) {
@@ -101,7 +96,6 @@ static void on_connected(struct bt_conn *conn, uint8_t err) {
     periph_conn = bt_conn_ref(conn);
     /* Delay to let ZMK's split protocol finish its own GATT discovery first */
     k_work_reschedule(&discover_work, K_MSEC(1000));
-    klor_display_power_peripheral_link_state(true);
 }
 
 static void on_disconnected(struct bt_conn *conn, uint8_t reason) {
@@ -111,7 +105,6 @@ static void on_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_conn_unref(periph_conn);
     periph_conn = NULL;
     mod_char_handle = 0;
-    klor_display_power_peripheral_link_state(false);
 }
 
 BT_CONN_CB_DEFINE(klor_mod_sync_conn_cb) = {
@@ -160,9 +153,3 @@ ZMK_SUBSCRIPTION(klor_mod_sync_keys, zmk_keycode_state_changed);
 
 ZMK_LISTENER(klor_mod_sync_layer, layer_event_cb);
 ZMK_SUBSCRIPTION(klor_mod_sync_layer, zmk_layer_state_changed);
-
-#endif /* DEBUG neutered block */
-
-/* Stub so klor_central_widget.c's call site still links with the rest of
- * this file's BT/GATT logic neutered above. */
-void klor_modifier_sync_notify_mods_changed(void) {}

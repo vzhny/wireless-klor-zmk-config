@@ -33,14 +33,11 @@ if(CONFIG_ZMK_DISPLAY)
   if(NOT CONFIG_ZMK_SPLIT OR CONFIG_ZMK_SPLIT_ROLE_CENTRAL)
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_central_widget.c)
     # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
-    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_central.c)
+    target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_central.c)
   else()
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_peripheral_widget.c)
     # klor_peripheral_widget.c's face icon needs this symbol to link.
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
-    # Live mod-sync GATT service, not yet re-enabled -- see
-    # klor_modifier_sync_central.c's #if 0 block. Mod row renders static
-    # (always WIN glyphs, never lit) until that's restored.
-    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_peripheral.c)
+    target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_peripheral.c)
   endif()
 endif()

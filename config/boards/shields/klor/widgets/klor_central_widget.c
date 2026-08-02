@@ -35,6 +35,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "klor_widgets_util.h"
 #include "../fonts/pixel_operator_mono.h"
 #include "../fonts/status_icon_font.h"
+#include "../split/klor_modifier_sync.h"
 
 /* klor_face_icon.c not in this build yet -- root cause of the static-display
  * bug (LV_Z_MEM_POOL_SIZE Kconfig mixup, see klor_left.conf) is fixed, but
@@ -293,8 +294,7 @@ static void shadow_slot_timeout(struct k_work *work) {
     slot->fired = true;
     shadow_mods |= slot->applied_bit;
     submit_shadow_render();
-    /* klor_modifier_sync_central.c not in this build yet -- no peripheral to
-     * forward mods to regardless. */
+    klor_modifier_sync_notify_mods_changed();
 }
 
 static int position_event_cb(const zmk_event_t *eh) {
@@ -318,6 +318,7 @@ static int position_event_cb(const zmk_event_t *eh) {
                 slot->fired = false;
                 shadow_mods &= ~slot->applied_bit;
                 submit_shadow_render();
+                klor_modifier_sync_notify_mods_changed();
             }
         }
         break;
