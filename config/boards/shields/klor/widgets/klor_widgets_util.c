@@ -57,3 +57,7 @@ void klor_badge_set_active(struct klor_badge *badge, bool active) {
     lv_obj_set_style_text_color(badge->label, active ? lv_color_white() : lv_color_black(),
                                 LV_PART_MAIN);
 }
+
+void klor_badge_set_font(struct klor_badge *badge, const lv_font_t *font) {
+    lv_obj_set_style_text_font(badge->label, font, LV_PART_MAIN);
+}

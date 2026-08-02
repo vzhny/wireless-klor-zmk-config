@@ -24,6 +24,12 @@
  *           its own to derive this from -- ZMK only resolves layers on the
  *           central half -- so it has to be forwarded here rather than read
  *           via zmk_keymap_layer_active() on the peripheral side.
+ *   bit 5 = Qwerty/Colemak flag, same reasoning as bit 4 -- drives the
+ *           peripheral's base_layer_badge ("QWERTY"/"COLEMAK"). Not yet
+ *           actually sent: klor_modifier_sync_central.c's send logic is
+ *           still #if 0'd from the display bisection (see CLAUDE.md), so
+ *           this bit and bit 4 both currently always arrive as 0 -- the
+ *           peripheral widget defaults to Qwerty/Win until that's restored.
  */
 
 #define BT_UUID_KLOR_MOD_SVC_VAL \

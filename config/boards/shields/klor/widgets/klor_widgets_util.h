@@ -24,3 +24,9 @@ lv_obj_t *klor_badge_row_create(lv_obj_t *parent, lv_coord_t w, lv_coord_t h,
 void klor_badge_create(struct klor_badge *badge, lv_obj_t *parent, const char *text);
 void klor_badge_set_text(struct klor_badge *badge, const char *text);
 void klor_badge_set_active(struct klor_badge *badge, bool active);
+
+/* Switches a badge between its default text font (pixel_operator_mono) and
+ * an icon font (e.g. status_icon_font's ICON_BOLT) -- needed wherever a
+ * badge's content toggles between a text label and a glyph, since
+ * klor_badge_create() hardcodes the text font otherwise. */
+void klor_badge_set_font(struct klor_badge *badge, const lv_font_t *font);

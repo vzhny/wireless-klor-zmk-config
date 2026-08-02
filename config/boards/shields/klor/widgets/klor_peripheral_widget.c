@@ -9,12 +9,12 @@
  * Status strip (LINKED/BAT/%) mirrors the central screen's BT/BAT/% strip.
  * The modifier row mirrors wireless-corne-zmk-config's peripheral screen:
  * right-hand modifier state doesn't exist locally on this half (ZMK only
- * resolves keycodes/mods/layers on the central half), so both the r_mods
- * nibble and the Mac/Win glyph-order flag are received over a custom BLE
- * GATT characteristic the central half writes to on every keycode/layer
- * event (see split/klor_modifier_sync_*.c, ported from corne's
- * modifier_sync). That GATT write lands on the BT RX thread, not the
- * display thread, so updates go through the display work queue rather
+ * resolves keycodes/mods/layers on the central half), so the r_mods nibble,
+ * the Mac/Win glyph-order flag, and the Qwerty/Colemak flag are received
+ * over a custom BLE GATT characteristic the central half writes to on every
+ * keycode/layer event (see split/klor_modifier_sync_*.c, ported from
+ * corne's modifier_sync). That GATT write lands on the BT RX thread, not
+ * the display thread, so updates go through the display work queue rather
  * than touching LVGL objects directly -- this is the same mechanism
  * ZMK_DISPLAY_WIDGET_LISTENER uses internally for ordinary ZMK events.
  */
@@ -33,6 +33,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "klor_peripheral_widget.h"
 #include "klor_widgets_util.h"
+#include "../fonts/pixel_operator_mono.h"
+#include "../fonts/status_icon_font.h"
 
 LV_IMG_DECLARE(klor_face_icon);
 
@@ -49,6 +51,7 @@ struct klor_peripheral_state {
     bool charging;
     bool link_connected;
     bool mac_mode;
+    bool colemak_mode;
     uint8_t r_mods;
 };
 
@@ -75,15 +78,34 @@ static void klor_peripheral_render(struct k_work *work) {
     struct klor_peripheral_widget *widget;
 
     SYS_SLIST_FOR_EACH_CONTAINER(&widgets, widget, node) {
+        /* Actual connection state, unlike the old hardcoded "LINKED" text --
+         * that was the bug: this badge's text never changed, and its color
+         * no longer inverts for being linked (see below), so it used to
+         * show "LINKED" permanently regardless of whether the peripheral
+         * was actually connected to anything. */
+        klor_badge_set_text(&widget->link_badge, widget_state.link_connected ? "LINKED"
+                                                                              : "UNLINKED");
         /* Connected is the steady/idle state -- like the central screen's BT
          * badge, this should never invert just for being linked. Only
          * mod_badges below invert, and only while actually held. */
         klor_badge_set_active(&widget->link_badge, false);
 
-        klor_badge_set_text(&widget->bat_badge, widget_state.charging ? "CHG" : "BAT");
+        if (widget_state.charging) {
+            klor_badge_set_font(&widget->bat_badge, &status_icon_font);
+            klor_badge_set_text(&widget->bat_badge, ICON_BOLT);
+        } else {
+            klor_badge_set_font(&widget->bat_badge, &pixel_operator_mono);
+            klor_badge_set_text(&widget->bat_badge, "BAT");
+        }
         char pct_buf[6];
         snprintf(pct_buf, sizeof(pct_buf), "%d%%", widget_state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
+        /* bat_badge/pct_badge just changed width (icon vs text, digit
+         * count) -- status_row is LV_SIZE_CONTENT and right-anchored, so it
+         * has to be re-aligned every time its content width can change, not
+         * just once at init (see the field comment in
+         * klor_peripheral_widget.h). */
+        lv_obj_align(widget->status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
         for (int i = 0; i < 4; i++) {
             const char *text;
@@ -92,6 +114,13 @@ static void klor_peripheral_render(struct k_work *work) {
             klor_badge_set_text(&widget->mod_badges[i], text);
             klor_badge_set_active(&widget->mod_badges[i], (widget_state.r_mods & bit) != 0);
         }
+        lv_obj_align(widget->mod_row, LV_ALIGN_TOP_RIGHT, 0, 20);
+
+        klor_badge_set_text(&widget->base_layer_badge, widget_state.colemak_mode ? "COLEMAK"
+                                                                                  : "QWERTY");
+        /* Never inverts -- an info badge, not a "something is held" badge,
+         * same rule as klor_central_widget.c's layer_name_badge. */
+        klor_badge_set_active(&widget->base_layer_badge, false);
     }
 }
 
@@ -106,6 +135,7 @@ static void request_render(void) {
 void klor_peripheral_widget_update_mods(uint8_t payload) {
     widget_state.r_mods = payload & 0x0F;
     widget_state.mac_mode = !!(payload & BIT(4));
+    widget_state.colemak_mode = !!(payload & BIT(5));
     request_render();
 }
 
@@ -154,42 +184,55 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    /* Status strip -- LINKED badge top-left, BAT/CHG + % badges top-right */
+    /* Row 1 -- LINKED/UNLINKED badge top-left, BAT/CHG + % badges top-right.
+     * Same ~15px badge height as the central screen (pixel_operator_mono
+     * line_height 13 + 1px top/bottom padding) -- everything below this row
+     * must clear y=16, or it clips into it. */
     klor_badge_create(&widget->link_badge, widget->obj, "LINKED");
     lv_obj_align(widget->link_badge.box, LV_ALIGN_TOP_LEFT, 0, 1);
 
-    lv_obj_t *status_row =
+    widget->status_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
-    lv_obj_align(status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
-    klor_badge_create(&widget->bat_badge, status_row, "BAT");
-    klor_badge_create(&widget->pct_badge, status_row, "100%");
+    klor_badge_create(&widget->bat_badge, widget->status_row, "BAT");
+    klor_badge_create(&widget->pct_badge, widget->status_row, "100%");
+    /* Align after the children exist -- lv_obj_align() is a one-time
+     * position command, not a live constraint, so aligning an empty
+     * LV_SIZE_CONTENT row to TOP_RIGHT anchors it at its (zero) width at
+     * call time; growing afterward as badges are added pushes the row's
+     * right edge past the panel edge instead of growing leftward from it. */
+    lv_obj_align(widget->status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
-    /* Rule -- above the modifier row */
-    klor_rule(widget->obj, 128, 0, 27);
+    klor_rule(widget->obj, 128, 0, 17);
 
-    /* KLOR face icon (left) + modifier badges, mirrored order (right) -- row 2 */
+    /* Row 2 -- modifier badges only, mirrored order (right-aligned). */
+    widget->mod_row =
+        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_END);
+    for (int i = 0; i < 4; i++) {
+        klor_badge_create(&widget->mod_badges[i], widget->mod_row, "SFT");
+    }
+    /* Same align-after-children rule as status_row above. */
+    lv_obj_align(widget->mod_row, LV_ALIGN_TOP_RIGHT, 0, 20);
+
+    klor_rule(widget->obj, 128, 0, 38);
+
+    /* Row 3 -- KLOR face icon bottom-left, active base layer bottom-right. */
     widget->face_icon = lv_img_create(widget->obj);
     lv_img_set_src(widget->face_icon, &klor_face_icon);
-    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_LEFT, 0, 31);
+    lv_obj_align(widget->face_icon, LV_ALIGN_TOP_LEFT, 0, 41);
 
-    lv_obj_t *mod_row =
-        klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, 16, LV_FLEX_ALIGN_END);
-    lv_obj_align(mod_row, LV_ALIGN_TOP_RIGHT, 0, 31);
-    for (int i = 0; i < 4; i++) {
-        klor_badge_create(&widget->mod_badges[i], mod_row, "SFT");
-    }
-
-    /* Rule -- below the modifier row */
-    klor_rule(widget->obj, 128, 0, 49);
+    klor_badge_create(&widget->base_layer_badge, widget->obj, "QWERTY");
+    lv_obj_align(widget->base_layer_badge.box, LV_ALIGN_TOP_RIGHT, 0, 41);
 
     sys_slist_append(&widgets, &widget->node);
 
     widget_state.battery_level = zmk_battery_state_of_charge();
     widget_state.charging = zmk_usb_is_powered();
     widget_state.link_connected = zmk_split_bt_peripheral_is_connected();
-    /* mac_mode starts false until the first synced payload arrives from
-     * central -- this half has no local layer state to read it from. */
+    /* mac_mode/colemak_mode start false (Qwerty/Win) until the first synced
+     * payload arrives from central -- this half has no local layer state
+     * of its own to read them from. */
     widget_state.mac_mode = false;
+    widget_state.colemak_mode = false;
     widget_state.r_mods = 0;
 
     klor_peripheral_render(NULL);

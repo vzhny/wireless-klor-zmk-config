@@ -24,6 +24,9 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 /* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
 #define KLOR_MAC_LAYER_A 1
 #define KLOR_MAC_LAYER_B 3
+/* 2 = Colemak-DH (Win), 3 = Colemak-DH (Mac) */
+#define KLOR_COLEMAK_LAYER_A 2
+#define KLOR_COLEMAK_LAYER_B 3
 
 static struct bt_conn *periph_conn;
 static uint16_t mod_char_handle;
@@ -134,7 +137,9 @@ static void send_mod_state(void) {
     uint8_t r_mods = (full_mods >> 4) & 0x0F;
     bool is_mac = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
                   zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
-    uint8_t payload = r_mods | (is_mac ? BIT(4) : 0);
+    bool is_colemak = zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_A) ||
+                      zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_B);
+    uint8_t payload = r_mods | (is_mac ? BIT(4) : 0) | (is_colemak ? BIT(5) : 0);
     bt_gatt_write_without_response(periph_conn, mod_char_handle, &payload, 1, false);
 }
 

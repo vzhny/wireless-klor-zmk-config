@@ -33,6 +33,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "klor_central_widget.h"
 #include "klor_widgets_util.h"
+#include "../fonts/pixel_operator_mono.h"
+#include "../fonts/status_icon_font.h"
 
 /* klor_face_icon.c not in this build yet -- root cause of the static-display
  * bug (LV_Z_MEM_POOL_SIZE Kconfig mixup, see klor_left.conf) is fixed, but
@@ -161,10 +163,21 @@ static void klor_central_render(struct klor_central_state state) {
             klor_badge_set_active(&widget->bt_badge, bt_flash_on);
         }
 
-        klor_badge_set_text(&widget->bat_badge, state.charging ? "CHG" : "BAT");
+        if (state.charging) {
+            klor_badge_set_font(&widget->bat_badge, &status_icon_font);
+            klor_badge_set_text(&widget->bat_badge, ICON_BOLT);
+        } else {
+            klor_badge_set_font(&widget->bat_badge, &pixel_operator_mono);
+            klor_badge_set_text(&widget->bat_badge, "BAT");
+        }
         char pct_buf[6];
         snprintf(pct_buf, sizeof(pct_buf), "%d%%", state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
+        /* bat_badge/pct_badge just changed width (icon vs text, digit count) --
+         * status_row is LV_SIZE_CONTENT and right-anchored, so it has to be
+         * re-aligned every time its content width can change, not just once
+         * at init (see the field comment in klor_central_widget.h). */
+        lv_obj_align(widget->status_row, LV_ALIGN_TOP_RIGHT, 0, 1);
 
         for (int i = 0; i < 4; i++) {
             const char *text;
@@ -371,8 +384,9 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_obj_set_style_pad_all(widget->obj, 0, LV_PART_MAIN);
     lv_obj_set_style_border_width(widget->obj, 0, LV_PART_MAIN);
 
-    lv_obj_t *status_row =
+    widget->status_row =
         klor_badge_row_create(widget->obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT, LV_FLEX_ALIGN_END);
+    lv_obj_t *status_row = widget->status_row;
     klor_badge_create(&widget->bat_badge, status_row, "BAT");
     klor_badge_create(&widget->pct_badge, status_row, "100%");
     /* Align after the children exist -- lv_obj_align() is a one-time
