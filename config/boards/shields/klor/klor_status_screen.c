@@ -4,9 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-/* minimal-test branch, step 7: real widget rendering restored, klor_face_icon.c
- * still excluded -- narrowing the BT/USB failure within klor_central_widget.c. */
-
 #include <zephyr/kernel.h>
 #include <lvgl.h>
 

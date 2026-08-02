@@ -13,9 +13,6 @@ set_property(GLOBAL PROPERTY KLOR_CMAKELISTS_INCLUDED TRUE)
 
 set(KLOR_SHIELD_DIR ${CMAKE_CURRENT_LIST_DIR})
 
-# minimal-test branch, step 7: keymap-sync changes confirmed fine alone.
-# klor_central_widget.c back in (the actual culprit), klor_face_icon.c
-# still out -- narrowing further within the widget file.
 if(CONFIG_ZMK_DISPLAY)
   target_include_directories(app PRIVATE ${KLOR_SHIELD_DIR})
   target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/klor_status_screen.c)
@@ -35,7 +32,11 @@ if(CONFIG_ZMK_DISPLAY)
     # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_central.c)
   else()
     target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/widgets/klor_peripheral_widget.c)
-    # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
+    # klor_peripheral_widget.c's face icon needs this symbol to link.
+    target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/icons/klor_face_icon.c)
+    # Live mod-sync GATT service, not yet re-enabled -- see
+    # klor_modifier_sync_central.c's #if 0 block. Mod row renders static
+    # (always WIN glyphs, never lit) until that's restored.
     # target_sources(app PRIVATE ${KLOR_SHIELD_DIR}/split/klor_modifier_sync_peripheral.c)
   endif()
 endif()
