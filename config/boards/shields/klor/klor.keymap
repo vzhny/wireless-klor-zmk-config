@@ -63,10 +63,19 @@
          * already being reused across many positions above. hold-preferred
          * (not balanced) so nothing can resolve this early via another
          * key's interrupt-release; not that anything else should be
-         * pressed during this hold anyway. */
+         * pressed during this hold anyway.
+         *
+         * #binding-cells must be <2> -- zmk,behavior-hold-tap's own
+         * devicetree binding (two_param.yaml) hardcodes it as a const,
+         * non-negotiable even though both children here take 0 params of
+         * their own. Each child only ever receives ONE forwarded param
+         * (hold gets param1, tap gets param2 -- see behavior_hold_tap.c's
+         * press_hold_binding/press_tap_binding), which &bootloader/&none
+         * both just ignore -- so the two dummy 0s at each call site below
+         * are inert placeholders, not real arguments. */
         bootloader_hold: bootloader_hold {
             compatible = "zmk,behavior-hold-tap";
-            #binding-cells = <0>;
+            #binding-cells = <2>;
             flavor = "hold-preferred";
             tapping-term-ms = <3000>;
             bindings = <&bootloader>, <&none>;
@@ -415,7 +424,7 @@
         bootloader_layer {
             label = "Bootloader";
             bindings = <
-&bootloader_hold  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &bootloader_hold
+&bootloader_hold 0 0  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &bootloader_hold 0 0
 &trans            &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &trans
 &trans            &trans  &trans  &trans  &trans  &trans  &trans   &trans  &trans  &trans  &trans  &trans
                           &trans  &trans  &trans          &trans  &trans  &trans
