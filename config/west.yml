@@ -9,10 +9,8 @@ manifest:
       remote: zmkfirmware
       revision: v0.3.0
       import: app/west.yml
-    # Piece 2 (bootloader-warn) added, not yet tagged -- pinned to the raw
-    # commit until CI confirms it builds, then bump to a real tag.
     - name: zmk-bootloader-hold
       remote: vzhny
-      revision: 81a88768f497659dcd4252624a85956c0ece8c92
+      revision: v1.1.0
   self:
     path: config
