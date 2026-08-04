@@ -26,6 +26,13 @@
  *           via zmk_keymap_layer_active() on the peripheral side.
  *   bit 5 = Qwerty/Colemak flag, same reasoning as bit 4 -- drives the
  *           peripheral's base_layer_badge ("QWERTY"/"COLEMAK").
+ *   bit 6 = Bootloader-pending flag. One-way latch: once set, klor.keymap's
+ *           bootloader_hold combo has passed its 1-second display-warning
+ *           mark (see klor_central_widget.c), and both halves' screens
+ *           switch to a centered "BOOTLOADER" label for good -- this never
+ *           gets cleared back to 0 in software, only by an actual power
+ *           cycle. Central sets it once via klor_modifier_sync_set_
+ *           bootloader_pending() and never unsets it again.
  */
 
 #define BT_UUID_KLOR_MOD_SVC_VAL \
@@ -40,3 +47,8 @@
  * (see its shadow-tracking section), since that doesn't otherwise generate
  * any event klor_modifier_sync_central.c would normally see. */
 void klor_modifier_sync_notify_mods_changed(void);
+
+/* Central-side only: latches the bootloader-pending flag (bit 6 above) on
+ * and immediately pushes it to the peripheral. One-way -- there is no
+ * corresponding "clear" function, see the payload doc above. */
+void klor_modifier_sync_set_bootloader_pending(void);

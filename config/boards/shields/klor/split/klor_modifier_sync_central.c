@@ -20,15 +20,18 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-/* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
+/* &tog'd base-layer indices from klor.keymap: 1 = Colemak-DH (Mac), 3 = Qwerty (Mac) */
 #define KLOR_MAC_LAYER_A 1
 #define KLOR_MAC_LAYER_B 3
-/* 2 = Colemak-DH (Win), 3 = Colemak-DH (Mac) */
-#define KLOR_COLEMAK_LAYER_A 2
-#define KLOR_COLEMAK_LAYER_B 3
+/* 0 = Colemak-DH (Win, default layer, always active), 1 = Colemak-DH (Mac) */
+#define KLOR_COLEMAK_LAYER_A 0
+#define KLOR_COLEMAK_LAYER_B 1
 
 static struct bt_conn *periph_conn;
 static uint16_t mod_char_handle;
+/* One-way latch, see klor_modifier_sync.h's payload doc (bit 6). Never
+ * cleared back to false in software. */
+static bool bootloader_pending;
 /* Sentinel outside the valid 6-bit payload range, so the first real send
  * always goes out even if it happens to compute as 0. Declared here (not
  * next to send_mod_state()) so on_disconnected() below can reset it too. */
@@ -141,7 +144,8 @@ static void send_mod_state(void) {
                   zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
     bool is_colemak = zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_A) ||
                       zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_B);
-    uint8_t payload = r_mods | (is_mac ? BIT(4) : 0) | (is_colemak ? BIT(5) : 0);
+    uint8_t payload =
+        r_mods | (is_mac ? BIT(4) : 0) | (is_colemak ? BIT(5) : 0) | (bootloader_pending ? BIT(6) : 0);
     /* keycode_event_cb fires on every keycode_state_changed event -- i.e.
      * every keypress on the whole board, not just modifiers -- so without
      * this check, typing normally sends a BLE GATT write per keystroke
@@ -157,6 +161,11 @@ static void send_mod_state(void) {
 }
 
 void klor_modifier_sync_notify_mods_changed(void) { send_mod_state(); }
+
+void klor_modifier_sync_set_bootloader_pending(void) {
+    bootloader_pending = true;
+    send_mod_state();
+}
 
 static int keycode_event_cb(const zmk_event_t *eh) {
     send_mod_state();

@@ -39,20 +39,24 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 LV_IMG_DECLARE(klor_face_icon);
 
-/* &tog'd base-layer indices from klor.keymap: 1 = Qwerty (Mac), 3 = Colemak-DH (Mac) */
+/* &tog'd base-layer indices from klor.keymap: 1 = Colemak-DH (Mac), 3 = Qwerty (Mac) */
 #define KLOR_MAC_LAYER_A 1
 #define KLOR_MAC_LAYER_B 3
 
 /* Layer index -> display name, matching klor.keymap's layer order exactly
- * (0 qwerty_win, 1 qwerty_mac, 2 colemak_win, 3 colemak_mac, 4 num, 5 nav,
- * 6 sym, 7 func, 8 admin). All four base-layer variants collapse to "Base"
- * -- Win vs Mac and Qwerty vs Colemak aren't shown here. Admin must stay
- * numbered higher than Func (its own conditional-layer trigger) or Func's
- * non-transparent bindings shadow Admin's at every shared position -- see
- * klor.keymap's admin_layer comment. Update this if klor.keymap's layer
- * order ever changes. */
+ * (0 colemak_win, 1 colemak_mac, 2 qwerty_win, 3 qwerty_mac, 4 num, 5 nav,
+ * 6 sym, 7 func, 8 admin, 9 arm, 10 bootloader). All four base-layer
+ * variants collapse to "Base" -- Win vs Mac and Qwerty vs Colemak aren't
+ * shown here. Admin must stay numbered higher than Func (its own
+ * conditional-layer trigger) or Func's non-transparent bindings shadow
+ * Admin's at every shared position -- see klor.keymap's admin_layer
+ * comment. Layers 9/10 normally never show here in practice -- by the time
+ * either is active, the bootloader warn-timer below has usually already
+ * overridden this badge with "BOOTLOADER" -- but named properly rather
+ * than falling through to "?" for the brief window before that fires.
+ * Update this if klor.keymap's layer order ever changes. */
 static const char *layer_names[] = {
-    "Base", "Base", "Base", "Base", "Num", "Nav", "Sym", "Func", "Admin",
+    "Base", "Base", "Base", "Base", "Num", "Nav", "Sym", "Func", "Admin", "Arm", "Boot",
 };
 #define LAYER_NAME_COUNT ARRAY_SIZE(layer_names)
 
@@ -83,6 +87,11 @@ static const char *layer_name_for(int layer) {
  * shape (bits 0-3 left, 4-7 right) - never fed back into actual HID
  * output. */
 static uint8_t shadow_mods;
+
+/* One-way latch, set by the bootloader warn-timer section below once the
+ * 1-second mark passes -- see klor_central_widget_set_bootloader_pending().
+ * Never cleared back to false in software. */
+static bool bootloader_pending;
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -186,6 +195,21 @@ static void klor_central_render(struct klor_central_state state) {
         /* Always black bg/white fg -- unlike mod_badges/bt_badge, this one
          * never inverts to an "active" look, per explicit instruction. */
         klor_badge_set_active(&widget->layer_name_badge, false);
+
+        /* Row 3 override: once latched, permanently replace the layer
+         * name + face icon with a centered "BOOTLOADER" label instead of
+         * just swapping layer_name_badge's text in place, so it reads as
+         * an unmistakable full-row alert rather than another status
+         * badge. */
+        if (bootloader_pending) {
+            lv_obj_add_flag(widget->layer_name_badge.box, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(widget->face_icon, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(widget->bootloader_label, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_clear_flag(widget->layer_name_badge.box, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(widget->face_icon, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(widget->bootloader_label, LV_OBJ_FLAG_HIDDEN);
+        }
     }
 }
 
@@ -333,6 +357,79 @@ ZMK_SUBSCRIPTION(klor_central_position, zmk_position_state_changed);
  * peripheral. */
 uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
 
+/* ── Bootloader warn-timer (display-only) ────────────────────────────── *
+ *
+ * klor.keymap's bootloader_hold (Q/`;` in bootloader_layer, layer 10)
+ * already handles the real 3-second-hold-then-fire decision entirely in
+ * the keymap itself, as a plain hold-tap -- this section only watches
+ * those same two raw positions to flip both screens to "BOOTLOADER" one
+ * second in, since hold-tap has no hook of its own for an intermediate
+ * mid-hold callback. */
+
+#define BOOTLOADER_LAYER 10
+
+struct bootloader_warn_slot {
+    uint32_t position;
+    bool held;
+    struct k_work_delayable work;
+};
+
+static void bootloader_warn_fire(struct k_work *work);
+
+static struct bootloader_warn_slot bootloader_warn_slots[] = {
+    {.position = 0}, /* Q -- always physically left/central */
+    {.position = 9}, /* ; -- always physically right/peripheral */
+};
+#define BOOTLOADER_WARN_SLOT_COUNT ARRAY_SIZE(bootloader_warn_slots)
+
+static void bootloader_warn_fire(struct k_work *work) {
+    struct k_work_delayable *dwork = k_work_delayable_from_work(work);
+    struct bootloader_warn_slot *slot = CONTAINER_OF(dwork, struct bootloader_warn_slot, work);
+    if (!slot->held) {
+        return; /* released before the 1s mark - nothing to show */
+    }
+    klor_central_widget_set_bootloader_pending();
+}
+
+static int bootloader_warn_position_event_cb(const zmk_event_t *eh) {
+    const struct zmk_position_state_changed *ev = as_zmk_position_state_changed(eh);
+    if (ev == NULL) {
+        return ZMK_EV_EVENT_BUBBLE;
+    }
+    for (size_t i = 0; i < BOOTLOADER_WARN_SLOT_COUNT; i++) {
+        struct bootloader_warn_slot *slot = &bootloader_warn_slots[i];
+        if (slot->position != ev->position) {
+            continue;
+        }
+        if (ev->state) {
+            /* Only meaningful once bootloader_layer is actually active --
+             * Q and `;` are ordinary letters on every other layer, and this
+             * must never fire from normal typing. */
+            if (zmk_keymap_layer_active(BOOTLOADER_LAYER)) {
+                slot->held = true;
+                k_work_schedule(&slot->work, K_MSEC(1000));
+            }
+        } else {
+            /* Released before the 1s mark: cancel the pending warn timer.
+             * Deliberately does NOT revert bootloader_pending if it
+             * already latched - see klor_central_widget.h's doc. */
+            slot->held = false;
+            k_work_cancel_delayable(&slot->work);
+        }
+        break;
+    }
+    return ZMK_EV_EVENT_BUBBLE;
+}
+
+ZMK_LISTENER(klor_bootloader_warn, bootloader_warn_position_event_cb);
+ZMK_SUBSCRIPTION(klor_bootloader_warn, zmk_position_state_changed);
+
+void klor_central_widget_set_bootloader_pending(void) {
+    bootloader_pending = true;
+    submit_shadow_render();
+    klor_modifier_sync_set_bootloader_pending();
+}
+
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
     uint8_t layer = zmk_keymap_highest_layer_active();
     bool mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
@@ -423,10 +520,27 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
     lv_img_set_src(widget->face_icon, &klor_face_icon);
     lv_obj_align(widget->face_icon, LV_ALIGN_TOP_RIGHT, 0, 43);
 
+    /* Bootloader overlay -- created up front and hidden, not allocated on
+     * demand, same reasoning as everything else on this screen: avoid any
+     * runtime LVGL allocation-order surprises (see CLAUDE.md's gotchas).
+     * Full panel width + centered text so it reads as a row-wide alert
+     * rather than another status badge. */
+    widget->bootloader_label = lv_label_create(widget->obj);
+    lv_obj_set_width(widget->bootloader_label, 128);
+    lv_obj_set_style_text_align(widget->bootloader_label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+    lv_obj_set_style_text_color(widget->bootloader_label, lv_color_black(), LV_PART_MAIN);
+    lv_obj_set_style_text_font(widget->bootloader_label, &pixel_operator_mono, LV_PART_MAIN);
+    lv_label_set_text(widget->bootloader_label, "BOOTLOADER");
+    lv_obj_align(widget->bootloader_label, LV_ALIGN_TOP_LEFT, 0, 43);
+    lv_obj_add_flag(widget->bootloader_label, LV_OBJ_FLAG_HIDDEN);
+
     sys_slist_append(&widgets, &widget->node);
 
     for (size_t i = 0; i < SHADOW_SLOT_COUNT; i++) {
         k_work_init_delayable(&shadow_slots[i].work, shadow_slot_timeout);
+    }
+    for (size_t i = 0; i < BOOTLOADER_WARN_SLOT_COUNT; i++) {
+        k_work_init_delayable(&bootloader_warn_slots[i].work, bootloader_warn_fire);
     }
 
     widget_klor_central_init();

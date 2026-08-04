@@ -54,6 +54,9 @@ struct klor_peripheral_state {
     bool mac_mode;
     bool colemak_mode;
     uint8_t r_mods;
+    /* One-way latch, see klor_modifier_sync.h's payload doc (bit 6). Never
+     * cleared back to false. */
+    bool bootloader_pending;
 };
 
 static struct klor_peripheral_state widget_state;
@@ -115,6 +118,19 @@ static void klor_peripheral_render(struct k_work *work) {
         /* Never inverts -- an info badge, not a "something is held" badge,
          * same rule as klor_central_widget.c's layer_name_badge. */
         klor_badge_set_active(&widget->base_layer_badge, false);
+
+        /* Row 3 override, mirrors klor_central_widget.c's treatment: once
+         * latched, permanently replace the face icon + base layer badge
+         * with a centered "BOOTLOADER" label. */
+        if (widget_state.bootloader_pending) {
+            lv_obj_add_flag(widget->face_icon, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(widget->base_layer_badge.box, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(widget->bootloader_label, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_clear_flag(widget->face_icon, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(widget->base_layer_badge.box, LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(widget->bootloader_label, LV_OBJ_FLAG_HIDDEN);
+        }
     }
 }
 
@@ -130,6 +146,12 @@ void klor_peripheral_widget_update_mods(uint8_t payload) {
     widget_state.r_mods = payload & 0x0F;
     widget_state.mac_mode = !!(payload & BIT(4));
     widget_state.colemak_mode = !!(payload & BIT(5));
+    /* One-way latch: only ever set true, never explicitly cleared back to
+     * false even if a future payload happens to carry bit 6 unset - see
+     * klor_modifier_sync.h's payload doc. */
+    if (payload & BIT(6)) {
+        widget_state.bootloader_pending = true;
+    }
     request_render();
 }
 
@@ -245,19 +267,32 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
     lv_img_set_src(widget->face_icon, &klor_face_icon);
     lv_obj_align(widget->face_icon, LV_ALIGN_TOP_LEFT, 0, 43);
 
-    klor_badge_create(&widget->base_layer_badge, widget->obj, "QWERTY");
+    klor_badge_create(&widget->base_layer_badge, widget->obj, "COLEMAK");
     lv_obj_align(widget->base_layer_badge.box, LV_ALIGN_TOP_RIGHT, 0, 43);
+
+    /* Bootloader overlay -- created up front and hidden, not allocated on
+     * demand, matching klor_central_widget.c's same treatment. Full panel
+     * width + centered text so it reads as a row-wide alert rather than
+     * another status badge. */
+    widget->bootloader_label = lv_label_create(widget->obj);
+    lv_obj_set_width(widget->bootloader_label, 128);
+    lv_obj_set_style_text_align(widget->bootloader_label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN);
+    lv_obj_set_style_text_color(widget->bootloader_label, lv_color_black(), LV_PART_MAIN);
+    lv_obj_set_style_text_font(widget->bootloader_label, &pixel_operator_mono, LV_PART_MAIN);
+    lv_label_set_text(widget->bootloader_label, "BOOTLOADER");
+    lv_obj_align(widget->bootloader_label, LV_ALIGN_TOP_LEFT, 0, 43);
+    lv_obj_add_flag(widget->bootloader_label, LV_OBJ_FLAG_HIDDEN);
 
     sys_slist_append(&widgets, &widget->node);
 
     widget_state.battery_level = zmk_battery_state_of_charge();
     widget_state.charging = zmk_usb_is_powered();
     widget_state.link_connected = zmk_split_bt_peripheral_is_connected();
-    /* mac_mode/colemak_mode start false (Qwerty/Win) until the first synced
-     * payload arrives from central -- this half has no local layer state
-     * of its own to read them from. */
+    /* mac_mode/colemak_mode start at the real boot default (Colemak-DH Win)
+     * until the first synced payload arrives from central -- this half has
+     * no local layer state of its own to read them from. */
     widget_state.mac_mode = false;
-    widget_state.colemak_mode = false;
+    widget_state.colemak_mode = true;
     widget_state.r_mods = 0;
 
     klor_peripheral_render(NULL);
