@@ -13,6 +13,6 @@ manifest:
     # commit until CI confirms it builds, then bump to a real tag.
     - name: zmk-bootloader-hold
       remote: vzhny
-      revision: 8610e0e18907f9fb9a369ba0e0dfb7fd7f6238cc
+      revision: 81a88768f497659dcd4252624a85956c0ece8c92
   self:
     path: config
