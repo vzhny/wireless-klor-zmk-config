@@ -24,6 +24,20 @@ hardware → observe.
   mods to the peripheral's own display), `klor_display_power.c` (custom blanking —
   stock ZMK idle-blank is used instead, and that's fine as-is, no complaints on it).
   `icon_font.c` is compiled in but not used by any widget yet.
+- `config/klor.keymap` (moved here from `config/boards/shields/klor/klor.keymap`,
+  2026-08-04) is now the single source of truth for the keymap — this is
+  intentional, not a repeat of the stale-duplicate incident described below.
+  ZMK's `post_boards_shields.cmake` searches `ZMK_CONFIG` (`config/`) *before*
+  the shield's own directory and stops at the first `<name>.keymap` match, so
+  a top-level file is the standard override location, not a shadow-risk, as
+  long as there's only ever one copy. It moved here specifically so
+  https://nickcoutsos.github.io/keymap-editor/ can find it (it only looks in
+  `config/`, not nested shield directories) — `config/klor.json` alongside it
+  is the corresponding physical-layout file the editor needs to render the
+  Saegewerk layout, replacing a stale generic-grid `klor.json` left over from
+  the original repo template (`72904cb`, pre-dates this project's actual
+  work) that didn't match this board's real position numbering or stagger at
+  all.
 - ZMK Studio and the `settings_reset` build were dropped for this branch's rebuild;
   re-add `studio-rpc-usb-uart` snippet + `CONFIG_ZMK_STUDIO` if Studio support comes
   back. `settings_reset` in `build.yaml` right now is a leftover diagnostic build —
