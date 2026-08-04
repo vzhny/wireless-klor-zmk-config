@@ -9,10 +9,8 @@ manifest:
       remote: zmkfirmware
       revision: v0.3.0
       import: app/west.yml
-    # Pinned to a commit, not a branch -- no tag exists yet (see that
-    # repo's README). Bump this deliberately, not by tracking main.
     - name: zmk-bootloader-hold
       remote: vzhny
-      revision: 621fddb5621d18c99a1d1979019074191677e57d
+      revision: v1.0.0
   self:
     path: config
