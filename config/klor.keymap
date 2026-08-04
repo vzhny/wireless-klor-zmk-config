@@ -401,4 +401,24 @@
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
     };
+
+    /* Fire the 1-second mid-hold warning (klor_central_widget.c's
+     * bootloader_warning_event_cb -> "BOOTLOADER" on both screens) for
+     * the same two positions bootloader_layer binds &bootloader_hold at.
+     * `latch` matches this project's one-way display latch -- see
+     * github.com/vzhny/zmk-bootloader-hold's README for what unsetting it
+     * would do instead. Purely a detector; doesn't affect &bootloader_hold
+     * itself, just watches the same position/layer independently. */
+    bootloader_warn_left: bootloader_warn_left {
+        compatible = "zmk,bootloader-warn";
+        layer = <10>;
+        position = <0>;
+        latch;
+    };
+    bootloader_warn_right: bootloader_warn_right {
+        compatible = "zmk,bootloader-warn";
+        layer = <10>;
+        position = <9>;
+        latch;
+    };
 };

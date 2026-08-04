@@ -36,6 +36,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "../fonts/pixel_operator_mono.h"
 #include "../fonts/status_icon_font.h"
 #include "../split/klor_modifier_sync.h"
+#include <bootloader_hold/events.h>
 
 LV_IMG_DECLARE(klor_face_icon);
 
@@ -357,72 +358,31 @@ ZMK_SUBSCRIPTION(klor_central_position, zmk_position_state_changed);
  * peripheral. */
 uint8_t klor_central_widget_get_display_mods(void) { return shadow_mods; }
 
-/* ── Bootloader warn-timer (display-only) ────────────────────────────── *
+/* ── Bootloader warn (display-only) ──────────────────────────────────── *
  *
  * klor.keymap's bootloader_hold (Q/`;` in bootloader_layer, layer 10)
- * already handles the real 3-second-hold-then-fire decision entirely in
- * the keymap itself, as a plain hold-tap -- this section only watches
- * those same two raw positions to flip both screens to "BOOTLOADER" one
- * second in, since hold-tap has no hook of its own for an intermediate
- * mid-hold callback. */
+ * handles the real 3-second-hold-then-fire decision entirely in the
+ * keymap itself, as a plain hold-tap. The 1-second mid-hold warning is
+ * klor.keymap's bootloader_warn_left/bootloader_warn_right devicetree
+ * nodes (zmk,bootloader-warn, from the zmk-bootloader-hold module) --
+ * they own the position/layer watching and the timing, and raise
+ * zmk_bootloader_warning when it's time to react. `latch` is set on both
+ * nodes, matching this file's one-way bootloader_pending latch, so
+ * `!ev->active` should never actually fire here -- handled anyway,
+ * as a no-op, since nothing about that guarantee is enforced at this
+ * layer. */
 
-#define BOOTLOADER_LAYER 10
-
-struct bootloader_warn_slot {
-    uint32_t position;
-    bool held;
-    struct k_work_delayable work;
-};
-
-static void bootloader_warn_fire(struct k_work *work);
-
-static struct bootloader_warn_slot bootloader_warn_slots[] = {
-    {.position = 0}, /* Q -- always physically left/central */
-    {.position = 9}, /* ; -- always physically right/peripheral */
-};
-#define BOOTLOADER_WARN_SLOT_COUNT ARRAY_SIZE(bootloader_warn_slots)
-
-static void bootloader_warn_fire(struct k_work *work) {
-    struct k_work_delayable *dwork = k_work_delayable_from_work(work);
-    struct bootloader_warn_slot *slot = CONTAINER_OF(dwork, struct bootloader_warn_slot, work);
-    if (!slot->held) {
-        return; /* released before the 1s mark - nothing to show */
-    }
-    klor_central_widget_set_bootloader_pending();
-}
-
-static int bootloader_warn_position_event_cb(const zmk_event_t *eh) {
-    const struct zmk_position_state_changed *ev = as_zmk_position_state_changed(eh);
-    if (ev == NULL) {
+static int bootloader_warning_event_cb(const zmk_event_t *eh) {
+    const struct zmk_bootloader_warning *ev = as_zmk_bootloader_warning(eh);
+    if (ev == NULL || !ev->active) {
         return ZMK_EV_EVENT_BUBBLE;
     }
-    for (size_t i = 0; i < BOOTLOADER_WARN_SLOT_COUNT; i++) {
-        struct bootloader_warn_slot *slot = &bootloader_warn_slots[i];
-        if (slot->position != ev->position) {
-            continue;
-        }
-        if (ev->state) {
-            /* Only meaningful once bootloader_layer is actually active --
-             * Q and `;` are ordinary letters on every other layer, and this
-             * must never fire from normal typing. */
-            if (zmk_keymap_layer_active(BOOTLOADER_LAYER)) {
-                slot->held = true;
-                k_work_schedule(&slot->work, K_MSEC(1000));
-            }
-        } else {
-            /* Released before the 1s mark: cancel the pending warn timer.
-             * Deliberately does NOT revert bootloader_pending if it
-             * already latched - see klor_central_widget.h's doc. */
-            slot->held = false;
-            k_work_cancel_delayable(&slot->work);
-        }
-        break;
-    }
+    klor_central_widget_set_bootloader_pending();
     return ZMK_EV_EVENT_BUBBLE;
 }
 
-ZMK_LISTENER(klor_bootloader_warn, bootloader_warn_position_event_cb);
-ZMK_SUBSCRIPTION(klor_bootloader_warn, zmk_position_state_changed);
+ZMK_LISTENER(klor_bootloader_warn, bootloader_warning_event_cb);
+ZMK_SUBSCRIPTION(klor_bootloader_warn, zmk_bootloader_warning);
 
 void klor_central_widget_set_bootloader_pending(void) {
     bootloader_pending = true;
@@ -538,9 +498,6 @@ int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *paren
 
     for (size_t i = 0; i < SHADOW_SLOT_COUNT; i++) {
         k_work_init_delayable(&shadow_slots[i].work, shadow_slot_timeout);
-    }
-    for (size_t i = 0; i < BOOTLOADER_WARN_SLOT_COUNT; i++) {
-        k_work_init_delayable(&bootloader_warn_slots[i].work, bootloader_warn_fire);
     }
 
     widget_klor_central_init();
