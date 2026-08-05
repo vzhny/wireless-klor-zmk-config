@@ -20,12 +20,10 @@
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-/* &tog'd base-layer indices from klor.keymap: 1 = Colemak-DH (Mac), 3 = Qwerty (Mac) */
-#define KLOR_MAC_LAYER_A 1
-#define KLOR_MAC_LAYER_B 3
-/* 0 = Colemak-DH (Win, default layer, always active), 1 = Colemak-DH (Mac) */
-#define KLOR_COLEMAK_LAYER_A 0
-#define KLOR_COLEMAK_LAYER_B 1
+/* &tog'd base-layer index from klor.keymap: 1 = Colemak-DH (Mac). Qwerty
+ * removed for now (Colemak-DH only), so there's only one Mac layer left to
+ * check -- see readme.md. */
+#define KLOR_MAC_LAYER 1
 
 static struct bt_conn *periph_conn;
 static uint16_t mod_char_handle;
@@ -140,12 +138,12 @@ static void send_mod_state(void) {
     uint8_t full_mods = klor_central_widget_get_display_mods();
     /* Extract right-side modifier bits (bits 4-7) into a nibble (bits 0-3) */
     uint8_t r_mods = (full_mods >> 4) & 0x0F;
-    bool is_mac = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
-                  zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
-    bool is_colemak = zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_A) ||
-                      zmk_keymap_layer_active(KLOR_COLEMAK_LAYER_B);
-    uint8_t payload =
-        r_mods | (is_mac ? BIT(4) : 0) | (is_colemak ? BIT(5) : 0) | (bootloader_pending ? BIT(6) : 0);
+    bool is_mac = zmk_keymap_layer_active(KLOR_MAC_LAYER);
+    /* No bit 5 anymore -- every base layer is Colemak now that Qwerty's
+     * removed, so the peripheral's base_layer_badge is just hardcoded to
+     * "COLEMAK" (klor_peripheral_widget.c) instead of being driven by a
+     * synced flag. */
+    uint8_t payload = r_mods | (is_mac ? BIT(4) : 0) | (bootloader_pending ? BIT(6) : 0);
     /* keycode_event_cb fires on every keycode_state_changed event -- i.e.
      * every keypress on the whole board, not just modifiers -- so without
      * this check, typing normally sends a BLE GATT write per keystroke

@@ -24,8 +24,10 @@
  *           its own to derive this from -- ZMK only resolves layers on the
  *           central half -- so it has to be forwarded here rather than read
  *           via zmk_keymap_layer_active() on the peripheral side.
- *   bit 5 = Qwerty/Colemak flag, same reasoning as bit 4 -- drives the
- *           peripheral's base_layer_badge ("QWERTY"/"COLEMAK").
+ *   bit 5 = unused. Used to be a Qwerty/Colemak flag driving the
+ *           peripheral's base_layer_badge; Qwerty's removed for now
+ *           (Colemak-DH only, see readme.md), so that badge is just
+ *           hardcoded to "COLEMAK" and this bit is never set or read.
  *   bit 6 = Bootloader-pending flag. One-way latch: once set, klor.keymap's
  *           bootloader_hold combo has passed its 1-second display-warning
  *           mark (see klor_central_widget.c), and both halves' screens

@@ -17,10 +17,11 @@ Hardware: two nice!nano v2 clones, BLE split, USB fallback, one SSD1306
 
 ### Features
 
-- **4 base layers**: Qwerty and Colemak-DH, each with a Windows and a macOS
-  variant (Ctrl/GUI swapped on the homerow only). Boots in Colemak-DH (Win)
-  always — the Mac/Qwerty toggles are runtime-only (`&tog`, not written to
-  NVS) and reset on power cycle.
+- **2 base layers**: Colemak-DH only for the time being (Qwerty removed —
+  see `klor.keymap`'s `colemak_win_layer` comment), Windows and macOS
+  variants (Ctrl/GUI swapped on the homerow only). Boots in Colemak-DH (Win)
+  always — the Mac toggle is runtime-only (`&tog`, not written to NVS) and
+  resets on power cycle.
 - **Homerow mods** (`hml`/`hmr`, balanced flavor, 200ms tapping term, 150ms
   require-prior-idle) on both hands' home row, tuned against accidental
   activation while typing normally.
@@ -28,7 +29,7 @@ Hardware: two nice!nano v2 clones, BLE split, USB fallback, one SSD1306
   Shift — same balanced flavor as the homerow mods.
 - **Layer-tap** on the outer pinky column: hold Z for Nav, hold `/` for Sym.
 - **Conditional Admin layer**: holding Num + Func together (no dedicated key)
-  activates BT profile switching and the Win/Mac/Colemak/Qwerty `&to`/`&tog`
+  activates BT profile switching and the default-layer/Mac `&to`/`&tog`
   toggles.
 - **Bootloader shortcut**: a separate Num+Nav chord arms a hold-to-enter
   Bootloader layer, letting each half reboot into UF2 mode independently
@@ -44,20 +45,21 @@ Hardware: two nice!nano v2 clones, BLE split, USB fallback, one SSD1306
 ### Layers
 
 Layer order and names match `klor.keymap` / the left OLED's layer-name badge
-exactly. `·` marks `trans` (falls through to whichever base layer 0–3 is
+exactly. `·` marks `trans` (falls through to whichever base layer 0–1 is
 currently active); `KEY-MOD` marks a homerow/thumb key that's tap-for-letter,
-hold-for-modifier. Win layers use `⌃` Ctrl / `⊞` Win (Gui) / `Alt` / `⇧`
-Shift; Mac layers use `⌃` Ctrl / `⌘` Cmd (Gui) / `⌥` Opt (Alt) / `⇧` Shift —
+hold-for-modifier. Win layer uses `⌃` Ctrl / `⊞` Win (Gui) / `Alt` / `⇧`
+Shift; Mac layer uses `⌃` Ctrl / `⌘` Cmd (Gui) / `⌥` Opt (Alt) / `⇧` Shift —
 Windows has no well-supported single-glyph Unicode symbol for Alt, so that
 one falls back to its short name. Every cell in every layer shares one fixed
-width (set by the widest cell anywhere in the doc) so all 11 diagrams line up
+width (set by the widest cell anywhere in the doc) so all 9 diagrams line up
 identically. Left hand's box on the left, right hand's on the right (aligned
 to the same column on every row, mirroring the physical gap between the two
 halves); thumb clusters sit close together below, like the real thumb keys
 do.
 
-All four base layers (0–3) are fully spelled out (no `trans` fallthrough
-between them) since layer 0 is Colemak, not Qwerty — see `klor.keymap`.
+Both base layers (0–1) are fully spelled out (no `trans` fallthrough between
+them) — see `klor.keymap`. Qwerty removed for now, Colemak-DH only; see the
+Features section above.
 
 The row-2 inner media keys (positions 25/26) aren't shown here — see the
 encoder note below the diagrams.
@@ -68,7 +70,7 @@ encoder note below the diagrams.
 |   Q    |   W    |   F    |   P    |   B    |          |   J    |   L    |   U    |   Y    |   ;    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|  A-⌃   |  R-⊞   | S-Alt  |   T    |   G    |          |   M    |   N    | E-Alt  |  I-⊞   |  O-⌃   |
+|  A-⌃   |  R-⌘   |  S-⌥   |   T    |   G    |          |   M    |   N    |  E-⌥   |  I-⌘   |  O-⌃   |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 | Z-nav  |   X    |   C    |   D    |   V    |          |   K    |   H    |   ,    |   .    | /-sym  |
@@ -93,37 +95,7 @@ encoder note below the diagrams.
          |  BSPC  |  Num   | SPC-⇧  |                            | BSPC-⇧ |  Func  |  RET   |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[2] Qwerty (Win)
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|   Q    |   W    |   E    |   R    |   T    |          |   Y    |   U    |   I    |   O    |   P    |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|  A-⌃   |  S-⊞   | D-Alt  |   F    |   G    |          |   H    |   J    | K-Alt  |  L-⊞   |  ;-⌃   |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-| Z-nav  |   X    |   C    |   V    |   B    |          |   N    |   M    |   ,    |   .    | /-sym  |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-
-         +--------+--------+--------+                            +--------+--------+--------+
-         |  BSPC  |  Num   | SPC-⇧  |                            | BSPC-⇧ |  Func  |  RET   |
-         +--------+--------+--------+                            +--------+--------+--------+
-
-[3] Qwerty (Mac)
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|   Q    |   W    |   E    |   R    |   T    |          |   Y    |   U    |   I    |   O    |   P    |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|  A-⌘   |  S-⌃   |  D-⌥   |   F    |   G    |          |   H    |   J    |  K-⌥   |  L-⌃   |  ;-⌘   |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-| Z-nav  |   X    |   C    |   V    |   B    |          |   N    |   M    |   ,    |   .    | /-sym  |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-
-         +--------+--------+--------+                            +--------+--------+--------+
-         |  BSPC  |  Num   | SPC-⇧  |                            | BSPC-⇧ |  Func  |  RET   |
-         +--------+--------+--------+                            +--------+--------+--------+
-
-[4] Numbers
+[2] Numbers
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |   1    |   2    |   3    |   4    |   5    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -138,7 +110,7 @@ encoder note below the diagrams.
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[5] Navigation
+[3] Navigation
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |   ·    |   ·    |   ·    |   ·    |   ·    |          |  HOME  |  PGDN  |  PGUP  |  END   |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -153,7 +125,7 @@ encoder note below the diagrams.
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[6] Symbols
+[4] Symbols
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |   -    |   =    |   (    |   )    |   `    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -168,7 +140,7 @@ encoder note below the diagrams.
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[7] Function Keys
+[5] Function Keys
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |   F1   |   F2   |   F3   |   F4   |   F5   |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -183,12 +155,12 @@ encoder note below the diagrams.
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[8] Admin (Num+Func chord)
+[6] Admin (Num+Func chord)
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |  BT0   |  BT1   |  BT2   |  BT3   | BTCLR  |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-| D-Win0 | C-Mac1 | Q-Win2 | Q-Mac3 |   ·    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
+| D-Win0 | C-Mac1 |   ·    |   ·    |   ·    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |   ·    |   ·    |   ·    |   ·    |   ·    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
@@ -198,7 +170,7 @@ encoder note below the diagrams.
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[9] Arm (Num+Nav chord)
+[7] Arm (Num+Nav chord)
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |   ·    |   ·    |   ·    |   ·    |   ·    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -213,7 +185,7 @@ encoder note below the diagrams.
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[10] Bootloader (hold V to keep open)
+[8] Bootloader (hold V to keep open)
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |  BOOT  |   ·    |   ·    |   ·    |   ·    |          |   ·    |   ·    |   ·    |   ·    |  BOOT  |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -227,12 +199,13 @@ encoder note below the diagrams.
          +--------+--------+--------+                            +--------+--------+--------+
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
+
 ```
 
-`D-Win0`/`C-Mac1`/`Q-Win2`/`Q-Mac3` on the Admin layer are `&to 0`/`&tog 1`/
-`&tog 2`/`&tog 3` respectively — `D-Win0` jumps straight back to Colemak-DH
-(Win), deactivating whichever of the other three is on, so you always have
-a way home without a power cycle. `V-arm` and both `BOOT` cells are the
+`D-Win0`/`C-Mac1` on the Admin layer are `&to 0`/`&tog 1` respectively —
+`D-Win0` jumps straight back to Colemak-DH (Win), deactivating the Mac
+toggle if it's on, so you always have a way home without a power cycle.
+`V-arm` and both `BOOT` cells are the
 Bootloader shortcut — see [BOOTLOADER SHORTCUT](#bootloader-shortcut) below
 for how it works and how to use it; all three (`klor.keymap`'s
 `admin_layer`/`arm_layer`/`bootloader_layer` comments) have the implementation
@@ -284,11 +257,11 @@ characteristic on every keycode/layer change, not static:
 └────────────────────────────────────────┘
 ```
 
-Shows `[LINKED]` once the peripheral connects to the central half; the
-base-layer badge reads `[QWERTY]`/`[COLEMAK]` and the modifier row relabels
-to `[OPT][CTL][CMD][SFT]`, both tracking whichever of the 4 base layers is
-active on the left half; boots showing `[COLEMAK]` (the default layer) until
-the first sync packet confirms it.
+Shows `[LINKED]` once the peripheral connects to the central half. The
+base-layer badge always reads `[COLEMAK]` now (Qwerty removed, see
+Features above) — it's no longer driven by a synced flag. The modifier row
+still relabels to `[OPT][CTL][CMD][SFT]` when the left half is on the Mac
+variant.
 
 **Bootloader alert state** — both halves, once the
 [Bootloader shortcut](#bootloader-shortcut)'s 1-second mark passes: row 3's
@@ -347,7 +320,7 @@ halves still paired, not after separating them.
 **Gesture:**
 
 1. Hold the Num thumb key + `Z` briefly, then press and hold `V` — this
-   "arms" `V` (see the `[9] Arm` layer above). Release the Num thumb key and
+   "arms" `V` (see the `[7] Arm` layer above). Release the Num thumb key and
    `Z`; keep holding `V`. `V` alone now keeps the Bootloader layer open for
    as long as it stays held (ZMK resolves `V`'s own binding once, at its
    press, from whichever layers were active at that instant — releasing

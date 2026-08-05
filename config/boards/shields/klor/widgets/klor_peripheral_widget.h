@@ -31,7 +31,8 @@ lv_obj_t *klor_peripheral_widget_obj(struct klor_peripheral_widget *widget);
  * display work queue rather than touching LVGL objects directly).
  *
  * payload bits 0-3: r_mods nibble. bit 4: Mac/Win glyph-order flag. bit 5:
- * Qwerty/Colemak flag. bit 6: bootloader-pending one-way latch (see
+ * unused (was a Qwerty/Colemak flag; Qwerty's removed for now, see
+ * readme.md). bit 6: bootloader-pending one-way latch (see
  * klor_modifier_sync.h). All forwarded by central since this half has no
  * local keymap/layer state to derive them from.
  */

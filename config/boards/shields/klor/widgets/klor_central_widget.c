@@ -40,24 +40,23 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 LV_IMG_DECLARE(klor_face_icon);
 
-/* &tog'd base-layer indices from klor.keymap: 1 = Colemak-DH (Mac), 3 = Qwerty (Mac) */
-#define KLOR_MAC_LAYER_A 1
-#define KLOR_MAC_LAYER_B 3
+/* &tog'd base-layer index from klor.keymap: 1 = Colemak-DH (Mac). Qwerty
+ * removed for now (Colemak-DH only) -- see readme.md. */
+#define KLOR_MAC_LAYER 1
 
 /* Layer index -> display name, matching klor.keymap's layer order exactly
- * (0 colemak_win, 1 colemak_mac, 2 qwerty_win, 3 qwerty_mac, 4 num, 5 nav,
- * 6 sym, 7 func, 8 admin, 9 arm, 10 bootloader). All four base-layer
- * variants collapse to "Base" -- Win vs Mac and Qwerty vs Colemak aren't
- * shown here. Admin must stay numbered higher than Func (its own
- * conditional-layer trigger) or Func's non-transparent bindings shadow
+ * (0 colemak_win, 1 colemak_mac, 2 num, 3 nav, 4 sym, 5 func, 6 admin,
+ * 7 arm, 8 bootloader). Both base-layer variants collapse to "Base" -- Win
+ * vs Mac isn't shown here. Admin must stay numbered higher than Func (its
+ * own conditional-layer trigger) or Func's non-transparent bindings shadow
  * Admin's at every shared position -- see klor.keymap's admin_layer
- * comment. Layers 9/10 normally never show here in practice -- by the time
- * either is active, the bootloader warn-timer below has usually already
- * overridden this badge with "BOOTLOADER" -- but named properly rather
- * than falling through to "?" for the brief window before that fires.
- * Update this if klor.keymap's layer order ever changes. */
+ * comment. Layers 7/8 normally never show here in practice -- by the time
+ * either is active, the zmk-bootloader-hold module's warn listener has
+ * usually already overridden this badge with "BOOTLOADER" -- but named
+ * properly rather than falling through to "?" for the brief window before
+ * that fires. Update this if klor.keymap's layer order ever changes. */
 static const char *layer_names[] = {
-    "Base", "Base", "Base", "Base", "Num", "Nav", "Sym", "Func", "Admin", "Arm", "Boot",
+    "Base", "Base", "Num", "Nav", "Sym", "Func", "Admin", "Arm", "Boot",
 };
 #define LAYER_NAME_COUNT ARRAY_SIZE(layer_names)
 
@@ -250,7 +249,7 @@ static void bt_flash_work_cb(struct k_work *work) {
  * this.
  *
  * Position -> logical mod, from klor.keymap's homerow/thumb bindings
- * (KLOR_MAC_LAYER_A/B swap Ctrl<->Gui on the homerow only; positions 12
+ * (KLOR_MAC_LAYER swaps Ctrl<->Gui on the homerow only; positions 12
  * and 17 don't swap; update this table if those bindings ever move): */
 
 struct shadow_mod_slot {
@@ -392,8 +391,7 @@ void klor_central_widget_set_bootloader_pending(void) {
 
 static struct klor_central_state klor_central_get_state(const zmk_event_t *_eh) {
     uint8_t layer = zmk_keymap_highest_layer_active();
-    bool mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER_A) ||
-                    zmk_keymap_layer_active(KLOR_MAC_LAYER_B);
+    bool mac_mode = zmk_keymap_layer_active(KLOR_MAC_LAYER);
 
     return (struct klor_central_state){
         .layer_label = layer_name_for(layer),

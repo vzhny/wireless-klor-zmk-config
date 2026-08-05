@@ -8,8 +8,17 @@ hardware → observe.
 
 ## Current state (as of the `minimal-test` → `main` merge)
 
-- Keymap: 3x5 + 3 thumb keys, QWERTY/Colemak-DH × Win/Mac (4 base layers) + Num/Nav/
-  Sym/Admin/Func, homerow mods, combos. Synced from `wireless-corne-zmk-config`.
+- Keymap: 3x5 + 3 thumb keys, Colemak-DH × Win/Mac (2 base layers) + Num/Nav/
+  Sym/Func/Admin/Arm/Bootloader, homerow mods, combos. Synced from
+  `wireless-corne-zmk-config`. Qwerty (Win/Mac) removed 2026-08-05 —
+  Colemak-DH only for the time being, per explicit request, not a technical
+  limitation. Re-adding it means re-inserting the two layers and shifting
+  every subsequent layer number back up by 2 (Num/Nav/Sym/Func/Admin/Arm/
+  Bootloader all renumbered when Qwerty was removed) plus undoing the
+  `KLOR_MAC_LAYER`/bit-5/`colemak_mode` simplifications in
+  `klor_modifier_sync_central.c`/`klor_central_widget.c`/
+  `klor_peripheral_widget.c` — see git history around that date for the
+  full diff shape.
 - Left half: full OLED status screen — BT/profile badge (blinking "BT..." while
   searching, "BT<n>" when connected), battery/charge badge, battery %, 4 live
   modifier badges, active layer name. Colors: black bg/white fg by default,
