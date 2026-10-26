@@ -24,7 +24,9 @@ static ssize_t write_mod_state(struct bt_conn *conn, const struct bt_gatt_attr *
     if (offset != 0) {
         return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
     }
-    klor_peripheral_widget_update_mods(*(const uint8_t *)buf);
+    if (*(const uint8_t *)buf & KLOR_SYNC_BOOTLOADER_PENDING) {
+        klor_peripheral_widget_set_bootloader_pending();
+    }
     return len;
 }
 

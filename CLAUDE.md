@@ -19,20 +19,23 @@ hardware → observe.
   `klor_modifier_sync_central.c`/`klor_central_widget.c`/
   `klor_peripheral_widget.c` — see git history around that date for the
   full diff shape.
-- Left half: full OLED status screen — BT/profile badge (blinking "BT..." while
-  searching, "BT<n>" when connected), battery/charge badge, battery %, 4 live
-  modifier badges, active layer name. Colors: black bg/white fg by default,
-  inverts to white bg/black fg only when a mod is actually held (see Gotchas).
-- Right half: **display is off** (`klor_right.conf` has no `CONFIG_ZMK_DISPLAY`).
-  Right OLED was reported not lighting up on real hardware — untested whether
-  that's hardware (loose connection/solder) or would just work if re-enabled;
-  check with a multimeter before spending more time on it.
-- Excluded from this build (commented out in `CMakeLists.txt`, straightforward to
-  re-add now that the real root cause below is fixed): `klor_face_icon.c`,
-  `klor_modifier_sync_central.c`/`_peripheral.c` (GATT sync forwarding right-hand
-  mods to the peripheral's own display), `klor_display_power.c` (custom blanking —
-  stock ZMK idle-blank is used instead, and that's fine as-is, no complaints on it).
-  `icon_font.c` is compiled in but not used by any widget yet.
+- Left half: OLED status screen — BT/profile badge (blinking "BT..." while
+  searching, "BT<n>" when connected), battery/charge badge, battery %, active
+  layer name, face icon. Black bg/white fg; only the searching BT badge inverts.
+- Right half: OLED on — LINKED/UNLINKED, battery/charge, %, face icon, base-layer
+  badge.
+- **No modifier display, on purpose** (removed 2026-10-26, same as
+  `wireless-corne-zmk-config@00eb04c`): it shadow-tracked mod positions and sent
+  a GATT write to the peripheral on mod changes, for a display-only guess at HID
+  state. Removed while chasing right-half keys auto-repeating ("nnnnn"). Don't
+  re-add without a reason that outweighs the radio/CPU cost.
+- `split/klor_modifier_sync_*.c` now carries only the bootloader-pending latch
+  (bit 6, one write when it fires) so the right screen can show "BOOTLOADER";
+  the peripheral has no layer state of its own. Bit 6 keeps its old position so
+  a half on older firmware can't trigger it with mod bits.
+- Not in this build: `klor_display_power.c` (custom blanking — stock ZMK
+  idle-blank is used instead, and that's fine as-is). `icon_font.c` is compiled
+  in but not used by any widget.
 - `config/klor.keymap` (moved here from `config/boards/shields/klor/klor.keymap`,
   2026-08-04) is now the single source of truth for the keymap — this is
   intentional, not a repeat of the stale-duplicate incident described below.

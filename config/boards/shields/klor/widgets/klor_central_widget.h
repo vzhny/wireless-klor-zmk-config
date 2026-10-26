@@ -17,7 +17,6 @@ struct klor_central_widget {
     struct klor_badge bt_badge;
     struct klor_badge bat_badge;
     struct klor_badge pct_badge;
-    struct klor_badge mod_badges[4];
     lv_obj_t *face_icon;
     struct klor_badge layer_name_badge;
     lv_obj_t *bootloader_label;
@@ -25,12 +24,6 @@ struct klor_central_widget {
 
 int klor_central_widget_init(struct klor_central_widget *widget, lv_obj_t *parent);
 lv_obj_t *klor_central_widget_obj(struct klor_central_widget *widget);
-
-/* Shadow-tracked mods (display-only, not real HID state -- see
- * klor_central_widget.c's shadow-tracking section), 8-bit HID shape (bits
- * 0-3 left, 4-7 right). Used by klor_modifier_sync_central.c to forward
- * the right-hand nibble to the peripheral. */
-uint8_t klor_central_widget_get_display_mods(void);
 
 /* One-way latch: once called, the left screen's row 3 permanently switches
  * to a centered "BOOTLOADER" label (see klor_central_widget.c's bootloader

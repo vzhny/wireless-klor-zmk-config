@@ -11,29 +11,13 @@
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/logging/log.h>
 
-#include <zmk/events/keycode_state_changed.h>
-#include <zmk/events/layer_state_changed.h>
-#include <zmk/keymap.h>
 
 #include "klor_modifier_sync.h"
-#include "../widgets/klor_central_widget.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-/* &tog'd base-layer index from klor.keymap: 1 = Colemak-DH (Mac). Qwerty
- * removed for now (Colemak-DH only), so there's only one Mac layer left to
- * check -- see readme.md. */
-#define KLOR_MAC_LAYER 1
-
 static struct bt_conn *periph_conn;
 static uint16_t mod_char_handle;
-/* One-way latch, see klor_modifier_sync.h's payload doc (bit 6). Never
- * cleared back to false in software. */
-static bool bootloader_pending;
-/* Sentinel outside the valid 6-bit payload range, so the first real send
- * always goes out even if it happens to compute as 0. Declared here (not
- * next to send_mod_state()) so on_disconnected() below can reset it too. */
-static uint8_t last_sent_payload = 0xFF;
 
 static struct bt_gatt_discover_params discover_params;
 static struct bt_uuid_128 svc_uuid = BT_UUID_INIT_128(BT_UUID_KLOR_MOD_SVC_VAL);
@@ -110,11 +94,6 @@ static void on_disconnected(struct bt_conn *conn, uint8_t reason) {
     bt_conn_unref(periph_conn);
     periph_conn = NULL;
     mod_char_handle = 0;
-    /* Force the next post-reconnect send_mod_state() to actually write,
-     * even if current state happens to match whatever was last sent before
-     * the drop -- the peripheral's own state may have reset/gone stale
-     * while disconnected. */
-    last_sent_payload = 0xFF;
 }
 
 BT_CONN_CB_DEFINE(klor_mod_sync_conn_cb) = {
@@ -122,61 +101,12 @@ BT_CONN_CB_DEFINE(klor_mod_sync_conn_cb) = {
     .disconnected = on_disconnected,
 };
 
-/* ── Modifier state forwarding ───────────────────────────────────────── */
+/* ── Bootloader latch forwarding ──────────────────────────────────────── */
 
-static void send_mod_state(void) {
+void klor_modifier_sync_set_bootloader_pending(void) {
     if (!periph_conn || !mod_char_handle) {
         return;
     }
-    /* klor_central_widget.c's display-only shadow-tracked mods (see its
-     * shadow-tracking section) -- not zmk_hid_get_explicit_mods(). The
-     * peripheral's mod cells get the same real-time approximation the
-     * left half's own display does, and it sidesteps a confirmed bug
-     * where the real HID snapshot doesn't reliably clear a bit after
-     * releasing a modifier held in isolation (see klor_central_widget.c's
-     * shadow-tracking section). */
-    uint8_t full_mods = klor_central_widget_get_display_mods();
-    /* Extract right-side modifier bits (bits 4-7) into a nibble (bits 0-3) */
-    uint8_t r_mods = (full_mods >> 4) & 0x0F;
-    bool is_mac = zmk_keymap_layer_active(KLOR_MAC_LAYER);
-    /* No bit 5 anymore -- every base layer is Colemak now that Qwerty's
-     * removed, so the peripheral's base_layer_badge is just hardcoded to
-     * "COLEMAK" (klor_peripheral_widget.c) instead of being driven by a
-     * synced flag. */
-    uint8_t payload = r_mods | (is_mac ? BIT(4) : 0) | (bootloader_pending ? BIT(6) : 0);
-    /* keycode_event_cb fires on every keycode_state_changed event -- i.e.
-     * every keypress on the whole board, not just modifiers -- so without
-     * this check, typing normally sends a BLE GATT write per keystroke
-     * that never actually changes anything on the peripheral's display.
-     * That extra radio traffic landing in the same real-time window as the
-     * OLED's I2C flush is the likely cause of the "screen tearing"-looking
-     * partial redraws when a mod badge flips. */
-    if (payload == last_sent_payload) {
-        return;
-    }
-    last_sent_payload = payload;
+    uint8_t payload = KLOR_SYNC_BOOTLOADER_PENDING;
     bt_gatt_write_without_response(periph_conn, mod_char_handle, &payload, 1, false);
 }
-
-void klor_modifier_sync_notify_mods_changed(void) { send_mod_state(); }
-
-void klor_modifier_sync_set_bootloader_pending(void) {
-    bootloader_pending = true;
-    send_mod_state();
-}
-
-static int keycode_event_cb(const zmk_event_t *eh) {
-    send_mod_state();
-    return ZMK_EV_EVENT_BUBBLE;
-}
-
-static int layer_event_cb(const zmk_event_t *eh) {
-    send_mod_state();
-    return ZMK_EV_EVENT_BUBBLE;
-}
-
-ZMK_LISTENER(klor_mod_sync_keys, keycode_event_cb);
-ZMK_SUBSCRIPTION(klor_mod_sync_keys, zmk_keycode_state_changed);
-
-ZMK_LISTENER(klor_mod_sync_layer, layer_event_cb);
-ZMK_SUBSCRIPTION(klor_mod_sync_layer, zmk_layer_state_changed);

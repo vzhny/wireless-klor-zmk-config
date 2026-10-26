@@ -17,7 +17,6 @@ struct klor_peripheral_widget {
     struct klor_badge link_badge;
     struct klor_badge bat_badge;
     struct klor_badge pct_badge;
-    struct klor_badge mod_badges[4];
     lv_obj_t *face_icon;
     struct klor_badge base_layer_badge;
     lv_obj_t *bootloader_label;
@@ -27,13 +26,7 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
 lv_obj_t *klor_peripheral_widget_obj(struct klor_peripheral_widget *widget);
 
 /* Called from klor_modifier_sync_peripheral.c's GATT write handler (BT RX
- * thread context, not the display thread -- this queues a redraw on the
- * display work queue rather than touching LVGL objects directly).
- *
- * payload bits 0-3: r_mods nibble. bit 4: Mac/Win glyph-order flag. bit 5:
- * unused (was a Qwerty/Colemak flag; Qwerty's removed for now, see
- * readme.md). bit 6: bootloader-pending one-way latch (see
- * klor_modifier_sync.h). All forwarded by central since this half has no
- * local keymap/layer state to derive them from.
- */
-void klor_peripheral_widget_update_mods(uint8_t payload);
+ * thread context -- this queues a redraw on the display work queue rather
+ * than touching LVGL objects directly). One-way latch, see
+ * klor_modifier_sync.h. */
+void klor_peripheral_widget_set_bootloader_pending(void);

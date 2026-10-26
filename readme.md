@@ -38,9 +38,9 @@ Hardware: two nice!nano v2 clones, BLE split, USB fallback, one SSD1306
 - **Combos**: Tab, Enter, Esc, `'`, Cut/Copy/Paste/Undo (with separate
   Win/Mac keybind variants that key off which base layer is active), and
   Caps Word (both thumb shifts together).
-- **Per-half OLED status screen**: BT/profile state, battery, live modifier
-  badges, and active layer name on the left; link/battery status and a
-  mirrored modifier row on the right (see mockups below).
+- **Per-half OLED status screen**: BT/profile state, battery and active layer
+  name on the left; link/battery status and base layer on the right (see
+  mockups below). No modifier display: it cost a BLE write per mod change.
 
 ### Layers
 
@@ -223,57 +223,51 @@ Both halves share one 128×64 monochrome SSD1306, physically inverted
 badges shown here as `▓TEXT▓` are the _active/lit_ state (flips to
 white-bg/black-fg on the real panel); plain `[TEXT]` badges are idle.
 
-**Left half (central)** — BT/profile + battery status, live modifier badges,
-active layer name, KLOR face icon:
+**Left half (central)** — BT/profile + battery status, active layer name,
+KLOR face icon:
 
 ```
 ┌────────────────────────────────────────┐
 │ [BT0]                    [BAT]  [ 87%] │
 │ ---------------------------------------│
-│ [SFT][CTL][GUI][ALT]                   │
+│                                        │
 │ ---------------------------------------│
 │ Base                              ◠◠   │
 └────────────────────────────────────────┘
 ```
 
 Disconnected/pairing shows a blinking `[BT.]` → `[BT..]` → `[BT...]`; on USB
-power the battery badge reads a bolt icon in place of `[BAT]`; holding e.g.
-left Ctrl lights that badge: `▓CTL▓`; the layer badge tracks whatever's
-active (`Num`, `Nav`, `Sym`, `Admin`, `Func`); Mac layers swap the mod-badge
-order to `[SFT][CMD][CTL][OPT]`.
+power the battery badge reads a bolt icon in place of `[BAT]`; the layer badge
+tracks whatever's active (`Num`, `Nav`, `Sym`, `Admin`, `Func`).
 
-**Right half (peripheral)** — link + battery status, mirrored modifier row,
-KLOR face icon, active base-layer name. The modifier row and base-layer name
-are live — forwarded from the left half over a custom BLE GATT
-characteristic on every keycode/layer change, not static:
+**Right half (peripheral)** — link + battery status, KLOR face icon, base-layer
+name:
 
 ```
 ┌────────────────────────────────────────┐
 │ [UNLINKED]                [BAT] [ 87%] │
 │ ---------------------------------------│
-│                [ALT][GUI][CTL][SFT]    │
+│                                        │
 │ ---------------------------------------│
 │ ◠◠                           [COLEMAK] │
 └────────────────────────────────────────┘
 ```
 
 Shows `[LINKED]` once the peripheral connects to the central half. The
-base-layer badge always reads `[COLEMAK]` now (Qwerty removed, see
-Features above) — it's no longer driven by a synced flag. The modifier row
-still relabels to `[OPT][CTL][CMD][SFT]` when the left half is on the Mac
-variant.
+base-layer badge is fixed text, not synced from the left half.
 
 **Bootloader alert state** — both halves, once the
 [Bootloader shortcut](#bootloader-shortcut)'s 1-second mark passes: row 3's
 layer name/face icon (left) or face icon/base-layer badge (right) are
-replaced by one centered, full-width label. Status row and modifier row
-above it keep updating normally — only row 3 changes:
+replaced by one centered, full-width label. The left half sends this to the
+right half over a custom BLE GATT characteristic (one write). The status row
+keeps updating normally — only row 3 changes:
 
 ```
 ┌────────────────────────────────────────┐
 │ [BT0]                    [BAT]  [ 87%] │
 │ ---------------------------------------│
-│ [SFT][CTL][GUI][ALT]                   │
+│                                        │
 │ ---------------------------------------│
 │              BOOTLOADER                │
 └────────────────────────────────────────┘
@@ -283,7 +277,7 @@ above it keep updating normally — only row 3 changes:
 ┌────────────────────────────────────────┐
 │ [LINKED]                 [BAT]  [ 87%] │
 │ ---------------------------------------│
-│                [ALT][GUI][CTL][SFT]    │
+│                                        │
 │ ---------------------------------------│
 │              BOOTLOADER                │
 └────────────────────────────────────────┘
