@@ -138,6 +138,10 @@ re-bisecting object-by-object.
   volume to actually disappear (bootloader auto-reboots into the new firmware
   once the write completes) before unplugging. A `cp` that returns quickly
   doesn't guarantee the write finished; macOS can buffer it.
+  `cp` often fails with `Device not configured` because the bootloader reboots
+  before macOS finishes writing metadata; the flash usually still worked. Use
+  `cp -X` (skips extended attributes) and chain with `;` instead of `&&` so the
+  wait loop still runs. No reset button on either half: double-tap RST to GND.
 - **CI build/module caching has been stale before** in this exact repo (traced
   once this session to `gh cache list`/`gh cache delete` fixing an "identical
   source, different binary" mystery). If a rebuild ever seems to ignore a real
