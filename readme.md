@@ -23,8 +23,9 @@ Hardware: two nice!nano v2 clones, BLE split, USB fallback, one SSD1306
   always — the Mac toggle is runtime-only (`&tog`, not written to NVS) and
   resets on power cycle.
 - **Homerow mods** (`hml`/`hmr`, balanced flavor, 200ms tapping term, 150ms
-  require-prior-idle) on both hands' home row, tuned against accidental
-  activation while typing normally.
+  require-prior-idle, `hold-trigger-on-release`) on both hands' home row,
+  tuned against accidental activation while typing normally. Same-hand
+  mod+key (e.g. Ctrl+F) works: it is decided on the second key's release.
 - **Thumb dual-role keys** (`thm`): tap for Space/Backspace, hold for
   Shift — same balanced flavor as the homerow mods.
 - **Layer-tap** on the outer pinky column: hold Z for Nav, hold `/` for Sym.
