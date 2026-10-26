@@ -203,7 +203,7 @@ int klor_peripheral_widget_init(struct klor_peripheral_widget *widget, lv_obj_t 
     lv_img_set_src(widget->face_icon, &klor_face_icon);
     lv_obj_align(widget->face_icon, LV_ALIGN_TOP_LEFT, 0, 43);
 
-    klor_badge_create(&widget->base_layer_badge, widget->obj, "COLEMAK");
+    klor_badge_create(&widget->base_layer_badge, widget->obj, "QWERTY");
     lv_obj_align(widget->base_layer_badge.box, LV_ALIGN_TOP_RIGHT, 0, 43);
 
     /* Bootloader overlay -- created up front and hidden, not allocated on

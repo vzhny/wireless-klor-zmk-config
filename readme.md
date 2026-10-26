@@ -17,9 +17,9 @@ Hardware: two nice!nano v2 clones, BLE split, USB fallback, one SSD1306
 
 ### Features
 
-- **2 base layers**: Colemak-DH only for the time being (Qwerty removed —
-  see `klor.keymap`'s `colemak_win_layer` comment), Windows and macOS
-  variants (Ctrl/GUI swapped on the homerow only). Boots in Colemak-DH (Win)
+- **2 base layers**: Qwerty only for the time being (Colemak-DH removed —
+  see `klor.keymap`'s `qwerty_win_layer` comment), Windows and macOS
+  variants (Ctrl/GUI swapped on the homerow only). Boots in Qwerty (Win)
   always — the Mac toggle is runtime-only (`&tog`, not written to NVS) and
   resets on power cycle.
 - **Homerow mods** (`hml`/`hmr`, balanced flavor, 200ms tapping term, 150ms
@@ -58,37 +58,37 @@ halves); thumb clusters sit close together below, like the real thumb keys
 do.
 
 Both base layers (0–1) are fully spelled out (no `trans` fallthrough between
-them) — see `klor.keymap`. Qwerty removed for now, Colemak-DH only; see the
+them) — see `klor.keymap`. Colemak-DH removed for now, Qwerty only; see the
 Features section above.
 
 The row-2 inner media keys (positions 25/26) aren't shown here — see the
 encoder note below the diagrams.
 
 ```
-[0] Colemak-DH (Win) -- default
+[0] Qwerty (Win) -- default
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|   Q    |   W    |   F    |   P    |   B    |          |   J    |   L    |   U    |   Y    |   ;    |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|  A-⌃   |  R-⌘   |  S-⌥   |   T    |   G    |          |   M    |   N    |  E-⌥   |  I-⌘   |  O-⌃   |
+|   Q    |   W    |   E    |   R    |   T    |          |   Y    |   U    |   I    |   O    |   P    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-| Z-nav  |   X    |   C    |   D    |   V    |          |   K    |   H    |   ,    |   .    | /-sym  |
+|  A-⌃   |  S-⌘   |  D-⌥   |   F    |   G    |          |   H    |   J    |  K-⌥   |  L-⌘   |  ;-⌃   |
++--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
++--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
+| Z-nav  |   X    |   C    |   V    |   B    |          |   N    |   M    |   ,    |   .    | /-sym  |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 
          +--------+--------+--------+                            +--------+--------+--------+
          |  BSPC  |  Num   | SPC-⇧  |                            | BSPC-⇧ |  Func  |  RET   |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[1] Colemak-DH (Mac)
+[1] Qwerty (Mac)
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|   Q    |   W    |   F    |   P    |   B    |          |   J    |   L    |   U    |   Y    |   ;    |
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-+--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|  A-⌘   |  R-⌃   |  S-⌥   |   T    |   G    |          |   M    |   N    |  E-⌥   |  I-⌃   |  O-⌘   |
+|   Q    |   W    |   E    |   R    |   T    |          |   Y    |   U    |   I    |   O    |   P    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-| Z-nav  |   X    |   C    |   D    |   V    |          |   K    |   H    |   ,    |   .    | /-sym  |
+|  A-⌘   |  S-⌃   |  D-⌥   |   F    |   G    |          |   H    |   J    |  K-⌥   |  L-⌃   |  ;-⌘   |
++--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
++--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
+| Z-nav  |   X    |   C    |   V    |   B    |          |   N    |   M    |   ,    |   .    | /-sym  |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 
          +--------+--------+--------+                            +--------+--------+--------+
@@ -178,14 +178,14 @@ encoder note below the diagrams.
 |   ·    |   ·    |   ·    |   ·    |   ·    |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
-|   ·    |   ·    |   ·    |   ·    | V-arm  |          |   ·    |   ·    |   ·    |   ·    |   ·    |
+|   ·    |   ·    |   ·    |   ·    | B-arm  |          |   ·    |   ·    |   ·    |   ·    |   ·    |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 
          +--------+--------+--------+                            +--------+--------+--------+
          |   ·    |   ·    |   ·    |                            |   ·    |   ·    |   ·    |
          +--------+--------+--------+                            +--------+--------+--------+
 
-[8] Bootloader (hold V to keep open)
+[8] Bootloader (hold B to keep open)
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
 |  BOOT  |   ·    |   ·    |   ·    |   ·    |          |   ·    |   ·    |   ·    |   ·    |  BOOT  |
 +--------+--------+--------+--------+--------+          +--------+--------+--------+--------+--------+
@@ -203,9 +203,9 @@ encoder note below the diagrams.
 ```
 
 `D-Win0`/`C-Mac1` on the Admin layer are `&to 0`/`&tog 1` respectively —
-`D-Win0` jumps straight back to Colemak-DH (Win), deactivating the Mac
+`D-Win0` jumps straight back to Qwerty (Win), deactivating the Mac
 toggle if it's on, so you always have a way home without a power cycle.
-`V-arm` and both `BOOT` cells are the
+`B-arm` and both `BOOT` cells are the
 Bootloader shortcut — see [BOOTLOADER SHORTCUT](#bootloader-shortcut) below
 for how it works and how to use it; all three (`klor.keymap`'s
 `admin_layer`/`arm_layer`/`bootloader_layer` comments) have the implementation
@@ -249,7 +249,7 @@ name:
 │ ---------------------------------------│
 │                                        │
 │ ---------------------------------------│
-│ ◠◠                           [COLEMAK] │
+│ ◠◠                            [QWERTY] │
 └────────────────────────────────────────┘
 ```
 
@@ -313,17 +313,17 @@ halves still paired, not after separating them.
 
 **Gesture:**
 
-1. Hold the Num thumb key + `Z` briefly, then press and hold `V` — this
-   "arms" `V` (see the `[7] Arm` layer above). Release the Num thumb key and
-   `Z`; keep holding `V`. `V` alone now keeps the Bootloader layer open for
-   as long as it stays held (ZMK resolves `V`'s own binding once, at its
+1. Hold the Num thumb key + `Z` briefly, then press and hold `B` — this
+   "arms" `B` (see the `[7] Arm` layer above). Release the Num thumb key and
+   `Z`; keep holding `B`. `B` alone now keeps the Bootloader layer open for
+   as long as it stays held (ZMK resolves `B`'s own binding once, at its
    press, from whichever layers were active at that instant — releasing
    Num/Nav afterward doesn't undo that).
-2. While still holding `V`, hold `;` for **3 seconds**. One second in, both
+2. While still holding `B`, hold `P` for **3 seconds**. One second in, both
    screens latch to a centered `BOOTLOADER` label (see the mockups above) —
    that's your warning it's about to fire, not confirmation it already has.
    At 3 seconds, the **right/peripheral** half reboots into bootloader mode.
-3. Release `;` (keep holding `V`). Once you've confirmed the right half is
+3. Release `P` (keep holding `B`). Once you've confirmed the right half is
    actually in bootloader mode (e.g. it shows up as a `NICENANO` drive, or
    you can otherwise tell it's no longer running as a keyboard), hold `Q`
    for 3 seconds. The **left/central** half reboots into bootloader mode.
@@ -332,19 +332,19 @@ halves still paired, not after separating them.
 
 **Do the right half first, always.** Once the left (central) half reboots,
 it stops running ZMK entirely — no keymap, no BLE central role — so the
-right half has nothing left to resolve `;` through, and holding it
+right half has nothing left to resolve `P` through, and holding it
 afterward does nothing. There's no way to recover from doing this out of
 order except the physical reset button on the right half.
 
-**Never hold `;` and `Q` at the same time.** If both 3-second holds
+**Never hold `P` and `Q` at the same time.** If both 3-second holds
 complete together, the left half's own reboot can cut its BLE radio before
 the "reboot yourself" message to the right half has actually finished
 sending over the air — leaving the right half un-rebooted with no
 indication why. Do them strictly one at a time, right fully first.
 
-**A quick tap of `V`, `;`, or `Q` does nothing** — `;`/`Q` both need the
+**A quick tap of `B`, `P`, or `Q` does nothing** — `P`/`Q` both need the
 full 3-second hold before anything happens (short of that, they're
-`&none`), and letting go of `V` early just drops the Bootloader layer with
+`&none`), and letting go of `B` early just drops the Bootloader layer with
 no side effects. The one exception: once either screen's 1-second
 `BOOTLOADER` warning has shown, it's permanent for that half regardless of
 what happens next (see the Display mockups section above) — only a power

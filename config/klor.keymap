@@ -77,13 +77,13 @@
             then-layer = <6>;
         };
 
-        /* Holding NUM (mo 2) + NAV (lt 3, via Z) "arms" V (position 24) with
+        /* Holding NUM (mo 2) + NAV (lt 3, via Z) "arms" B (position 24) with
          * &mo 8 -- see arm_layer's comment. Releasing Num/Nav afterward does
          * NOT drop this: ZMK resolves a key's binding once, at its own
          * press, from whatever layers were active at that instant (see
          * zmk_keymap_position_state_changed's zmk_keymap_active_behavior_layer
-         * snapshot in zmk's keymap.c) -- so once V is pressed while this
-         * layer is active, V's own hold keeps layer 8 open independent of
+         * snapshot in zmk's keymap.c) -- so once B is pressed while this
+         * layer is active, B's own hold keeps layer 8 open independent of
          * Num/Nav's state afterward. */
 
         arm {
@@ -126,7 +126,7 @@
         /* Adjacent/roll-prone combos — require-prior-idle-ms 150 gates fast typing
          * rolls. If misfires persist, raise timeout-ms (primary tuning knob).
          *
-         * Win/Mac split: base profile layer (0 Colemak-Win vs 1 Colemak-Mac)
+         * Win/Mac split: base profile layer (0 Qwerty-Win vs 1 Qwerty-Mac)
          * stays active underneath any stacked momentary layer
          * (NUM/NAV/SYM/FUNC/ADMIN), so restricting by base layer here still
          * fires correctly while those are held. */
@@ -206,34 +206,31 @@
     keymap {
         compatible = "zmk,keymap";
 
-        /* COLEMAK-DH WIN — default/base layer (layer 0), Windows homerow mods (GACS).
-         * Layout: Q W F P B | J L U Y ;
-         *         A R S T G | M N E I O
-         *         Z X C D V | K H , . /
+        /* QWERTY WIN — default/base layer (layer 0), Windows homerow mods (GACS).
          * Always boots here; the Mac variant is &tog'd on top from ADMIN.
-         * Qwerty removed for now (Colemak-DH only) -- see readme.md. */
+         * Colemak-DH removed for now (Qwerty only) -- see readme.md. */
 
-        colemak_win_layer {
-            label = "Colemak-DH (Win)";
+        qwerty_win_layer {
+            label = "Qwerty (Win)";
             bindings = <
-&kp Q         &kp W        &kp F        &kp P  &kp B             &kp J            &kp L  &kp U        &kp Y        &kp SEMI
-&hml LCTRL A  &hml LGUI R  &hml LALT S  &kp T  &kp G             &kp M            &kp N  &hmr RALT E  &hmr RGUI I  &hmr RCTRL O
-&lt 3 Z       &kp X        &kp C        &kp D  &kp V  &trans     &trans    &kp K  &kp H  &kp COMMA    &kp DOT      &lt 4 FSLH
+&kp Q         &kp W        &kp E        &kp R  &kp T             &kp Y            &kp U  &kp I        &kp O        &kp P
+&hml LCTRL A  &hml LGUI S  &hml LALT D  &kp F  &kp G             &kp H            &kp J  &hmr RALT K  &hmr RGUI L  &hmr RCTRL SEMI
+&lt 3 Z       &kp X        &kp C        &kp V  &kp B  &kp C_MUTE &kp C_PP  &kp N  &kp M  &kp COMMA    &kp DOT      &lt 4 FSLH
                           &kp BSPC     &mo 2  &thm LSHFT SPACE  &thm RSHFT BSPC  &mo 5  &kp RET
             >;
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
-        /* COLEMAK-DH MAC — full base layer with macOS homerow mods (Ctrl↔GUI swapped).
+        /* QWERTY MAC — full base layer with macOS homerow mods (Ctrl↔GUI swapped).
          * Activated via &tog 1 from ADMIN. &tog state is runtime-only (not written
          * to NVS), so this layer is always off on power cycle. */
 
-        colemak_mac_layer {
-            label = "Colemak-DH (Mac)";
+        qwerty_mac_layer {
+            label = "Qwerty (Mac)";
             bindings = <
-&kp Q         &kp W        &kp F        &kp P  &kp B             &kp J            &kp L  &kp U         &kp Y        &kp SEMI
-&hml LGUI A   &hml LCTRL R &hml LALT S  &kp T  &kp G             &kp M            &kp N  &hmr RALT E   &hmr RCTRL I &hmr RGUI O
-&lt 3 Z       &kp X        &kp C        &kp D  &kp V  &trans     &trans    &kp K  &kp H  &kp COMMA     &kp DOT      &lt 4 FSLH
+&kp Q         &kp W        &kp E        &kp R  &kp T             &kp Y            &kp U  &kp I        &kp O        &kp P
+&hml LGUI A   &hml LCTRL S &hml LALT D  &kp F  &kp G             &kp H            &kp J  &hmr RALT K  &hmr RCTRL L &hmr RGUI SEMI
+&lt 3 Z       &kp X        &kp C        &kp V  &kp B  &kp C_MUTE &kp C_PP  &kp N  &kp M  &kp COMMA    &kp DOT      &lt 4 FSLH
                           &kp BSPC     &mo 2  &thm LSHFT SPACE  &thm RSHFT BSPC  &mo 5  &kp RET
             >;
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
@@ -303,11 +300,11 @@
          * Top row left: BT device select 0-3, BT clear.
          * Top row right: unused (sys_reset/bootloader moved to the dedicated
          * Bootloader layer -- see arm_layer/bootloader_layer below).
-         * Homerow left: to 0 = back to Colemak-DH (Win) default (deactivates
+         * Homerow left: to 0 = back to Qwerty (Win) default (deactivates
          * every other active layer, including whichever &tog is on -- see
-         * `&to`'s docs), tog 1 = Colemak Mac. Qwerty removed for now.
+         * `&to`'s docs), tog 1 = Qwerty Mac. Colemak-DH removed for now.
          * Homerow right H: studio unlock -- trans for now, no Studio this round.
-         * All tog states are runtime-only — always off on power cycle (Colemak-DH Win default). */
+         * All tog states are runtime-only — always off on power cycle (Qwerty Win default). */
 
         admin_layer {
             label = "Admin";
@@ -320,10 +317,10 @@
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
-        /* ARM — conditional: NUM(2) + NAV(3) held simultaneously "arms" V
+        /* ARM — conditional: NUM(2) + NAV(3) held simultaneously "arms" B
          * (position 24) with &mo 8. See conditional_layers's `arm` entry
          * comment for why releasing Num/Nav afterward doesn't drop this --
-         * V's own hold is what keeps BOOTLOADER (layer 8) open from here on. */
+         * B's own hold is what keeps BOOTLOADER (layer 8) open from here on. */
 
         arm_layer {
             label = "Arm";
@@ -336,8 +333,8 @@
             sensor-bindings = <&inc_dec_kp C_VOL_UP C_VOL_DN>;
         };
 
-        /* BOOTLOADER — only reachable by holding V after arming it via
-         * ARM (Num+Nav), see above. Q and `;` each need an independent
+        /* BOOTLOADER — only reachable by holding B after arming it via
+         * ARM (Num+Nav), see above. Q and `P` each need an independent
          * 3-second hold (&bootloader_hold, from the zmk-bootloader-hold
          * module -- see its README for why #binding-cells is <2> and why
          * this has to be a direct position binding, not a combo, to get
@@ -345,14 +342,14 @@
          * quick tap is a no-op.
          *
          * Q (position 0, always physically on the left) reboots the
-         * central; `;` (position 9, always physically on the right)
+         * central; `P` (position 9, always physically on the right)
          * reboots the peripheral -- see &bootloader's
          * BEHAVIOR_LOCALITY_EVENT_SOURCE, explained in the module.
          *
          * Reboot the right half BEFORE the left: once the central (left)
          * reboots, it stops running ZMK entirely, so the peripheral has no
-         * central left to resolve anything through -- holding `;`
-         * afterward does nothing. Don't hold `;` and Q at the same time
+         * central left to resolve anything through -- holding `P`
+         * afterward does nothing. Don't hold `P` and Q at the same time
          * either: if both fire together, the central's own reboot can cut
          * its BLE radio before the "reboot yourself" message to the
          * peripheral finishes sending, leaving the right half un-rebooted

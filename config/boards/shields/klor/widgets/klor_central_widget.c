@@ -40,7 +40,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 LV_IMG_DECLARE(klor_face_icon);
 
 /* Layer index -> display name, matching klor.keymap's layer order exactly
- * (0 colemak_win, 1 colemak_mac, 2 num, 3 nav, 4 sym, 5 func, 6 admin,
+ * (0 qwerty_win, 1 qwerty_mac, 2 num, 3 nav, 4 sym, 5 func, 6 admin,
  * 7 arm, 8 bootloader). Both base-layer variants collapse to "Base" -- Win
  * vs Mac isn't shown here. Admin must stay numbered higher than Func (its
  * own conditional-layer trigger) or Func's non-transparent bindings shadow
@@ -175,7 +175,7 @@ static K_WORK_DEFINE(render_work, render_work_cb);
 
 /* ── Bootloader warn (display-only) ──────────────────────────────────── *
  *
- * klor.keymap's bootloader_hold (Q/`;` in bootloader_layer, layer 10)
+ * klor.keymap's bootloader_hold (Q/P in bootloader_layer, layer 8)
  * handles the real 3-second-hold-then-fire decision entirely in the
  * keymap itself, as a plain hold-tap. The 1-second mid-hold warning is
  * klor.keymap's bootloader_warn_left/bootloader_warn_right devicetree
