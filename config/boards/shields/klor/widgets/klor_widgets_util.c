@@ -6,6 +6,8 @@
 
 #include "klor_widgets_util.h"
 
+#include <stdio.h>
+
 #include "../fonts/pixel_operator_mono.h"
 
 lv_obj_t *klor_badge_row_create(lv_obj_t *parent, lv_coord_t w, lv_coord_t h,
@@ -60,4 +62,18 @@ void klor_badge_set_active(struct klor_badge *badge, bool active) {
 
 void klor_badge_set_font(struct klor_badge *badge, const lv_font_t *font) {
     lv_obj_set_style_text_font(badge->label, font, LV_PART_MAIN);
+}
+
+void klor_battery_pct_text(char *buf, size_t len, bool charging, uint8_t level) {
+    /* One widget per half, so one snapshot per firmware image. */
+    static int last_on_battery = -1;
+
+    if (!charging) {
+        last_on_battery = level;
+    }
+    if (last_on_battery < 0) {
+        snprintf(buf, len, "--%%");
+    } else {
+        snprintf(buf, len, "%d%%", last_on_battery);
+    }
 }

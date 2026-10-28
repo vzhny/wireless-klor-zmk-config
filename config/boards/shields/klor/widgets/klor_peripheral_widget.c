@@ -69,7 +69,8 @@ static void klor_peripheral_render(struct k_work *work) {
             klor_badge_set_text(&widget->bat_badge, "BAT");
         }
         char pct_buf[6];
-        snprintf(pct_buf, sizeof(pct_buf), "%d%%", widget_state.battery_level);
+        klor_battery_pct_text(pct_buf, sizeof(pct_buf), widget_state.charging,
+                              widget_state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
 
         /* Text is set once at creation and never touched again. Never

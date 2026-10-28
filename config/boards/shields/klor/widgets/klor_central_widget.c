@@ -133,7 +133,7 @@ static void klor_central_render(struct klor_central_state state) {
             klor_badge_set_text(&widget->bat_badge, "BAT");
         }
         char pct_buf[6];
-        snprintf(pct_buf, sizeof(pct_buf), "%d%%", state.battery_level);
+        klor_battery_pct_text(pct_buf, sizeof(pct_buf), state.charging, state.battery_level);
         klor_badge_set_text(&widget->pct_badge, pct_buf);
 
         klor_badge_set_text(&widget->layer_name_badge, state.layer_label);

@@ -6,6 +6,10 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
 #include <lvgl.h>
 
 /* A small auto-sized text badge: black background / white text normally,
@@ -30,3 +34,10 @@ void klor_badge_set_active(struct klor_badge *badge, bool active);
  * badge's content toggles between a text label and a glyph, since
  * klor_badge_create() hardcodes the text font otherwise. */
 void klor_badge_set_font(struct klor_badge *badge, const lv_font_t *font);
+
+/* Writes the battery % badge text. While on USB the charger holds the cell at
+ * its charge voltage, so ZMK reads ~100% no matter the real level, and the
+ * charger's done signal only drives its LED (no GPIO), so "full" can't be
+ * detected either. Shows the last on-battery reading while charging instead,
+ * or "--%" if the board booted on USB. */
+void klor_battery_pct_text(char *buf, size_t len, bool charging, uint8_t level);
