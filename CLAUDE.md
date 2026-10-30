@@ -101,10 +101,12 @@ re-bisecting object-by-object.
 
 ## Gotchas / traps for next time
 
-- **No serial console when things crash.** `CONFIG_ZMK_USB_LOGGING=y` plus a
-  dedicated `log_uart0` CDC-ACM node (`klor_left.overlay`, separate from ZMK
-  Studio's `studio-rpc-usb-uart` snippet — they need their own UART each, can't
-  share one) usually gives `/dev/tty.usbmodem*`. But if the device is crash-
+- **No serial console when things crash.** USB logging is off (removed
+  2026-10-30 for battery). To debug again: `CONFIG_ZMK_USB_LOGGING=y` in
+  `klor_left.conf` plus a dedicated `log_uart0` CDC-ACM node set as
+  `zephyr,console` in `klor_left.overlay` (separate from ZMK Studio's
+  `studio-rpc-usb-uart` snippet — they need their own UART each, can't share
+  one; see git history) usually gives `/dev/tty.usbmodem*`. But if the device is crash-
   looping, USB never finishes enumerating and no tty node appears at all — you
   are debugging blind. Confirm crash-loops are actually fixed (BT connects, keys
   register, reliably, across replugs) before trusting any serial capture.
