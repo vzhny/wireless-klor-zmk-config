@@ -20,6 +20,8 @@
 	kscan0: kscan {
 		compatible = "zmk,kscan-gpio-matrix";
 		label = "KSCAN";
+		/* Lets a keypress wake the half from ZMK_SLEEP deep sleep. */
+		wakeup-source;
 
 		diode-direction = "col2row";		
 	};
