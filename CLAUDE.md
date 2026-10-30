@@ -149,6 +149,12 @@ re-bisecting object-by-object.
   just `md5` two builds you expect to differ) before assuming the *code* is
   wrong — don't take a green CI build's correctness for granted if the symptom
   looks cache-shaped.
+- **Shared (both-halves) Kconfig goes in `config/klor.conf`**, not the shield
+  dir. ZMK merges only `<shield>.conf` (`klor_left.conf`/`klor_right.conf`)
+  from the shield dir; a shield-dir `klor.conf` is silently ignored (TX power
+  sat there unapplied until 2026-10-30). Shield `Kconfig.defconfig` defaults
+  also lose to ZMK's own (`ZMK_DISPLAY_BLANK_ON_IDLE default n` did nothing).
+  Check the "Merged configuration" lines and Kconfig dump in the CI log.
 - **`config/CMakeLists.txt` is only picked up because `zephyr/module.yml`
   registers `config/` as a Zephyr module** (`build: cmake:
   config/boards/shields/klor`). Without that, this file — and everything it
