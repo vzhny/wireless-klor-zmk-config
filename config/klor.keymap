@@ -213,7 +213,7 @@
          * Colemak-DH removed for now (Qwerty only) -- see readme.md. */
 
         qwerty_win_layer {
-            label = "Qwerty (Win)";
+            display-name = "Qwerty (Win)";
             bindings = <
 &kp Q         &kp W        &kp E        &kp R  &kp T             &kp Y            &kp U  &kp I        &kp O        &kp P
 &hml LCTRL A  &hml LGUI S  &hml LALT D  &kp F  &kp G             &kp H            &kp J  &hmr RALT K  &hmr RGUI L  &hmr RCTRL SEMI
@@ -228,7 +228,7 @@
          * to NVS), so this layer is always off on power cycle. */
 
         qwerty_mac_layer {
-            label = "Qwerty (Mac)";
+            display-name = "Qwerty (Mac)";
             bindings = <
 &kp Q         &kp W        &kp E        &kp R  &kp T             &kp Y            &kp U  &kp I        &kp O        &kp P
 &hml LGUI A   &hml LCTRL S &hml LALT D  &kp F  &kp G             &kp H            &kp J  &hmr RALT K  &hmr RCTRL L &hmr RGUI SEMI
@@ -241,7 +241,7 @@
         /* NUM — left: 1-5 top row, 6-0 homerow; right: &trans */
 
         num_layer {
-            label = "Numbers";
+            display-name = "Numbers";
             bindings = <
 &kp NUMBER_1  &kp NUMBER_2  &kp NUMBER_3  &kp NUMBER_4  &kp N5             &trans  &trans  &trans  &trans  &trans
 &kp NUMBER_6  &kp N7        &kp N8        &kp NUMBER_9  &kp NUMBER_0       &trans  &trans  &trans  &trans  &trans
@@ -255,7 +255,7 @@
          * right bottom: Ctrl+Left/Right word motions; left: del + vol */
 
         nav_layer {
-            label = "Navigation";
+            display-name = "Navigation";
             bindings = <
 &trans  &trans  &trans      &trans        &trans        &kp HOME  &kp PAGE_DOWN  &kp PAGE_UP  &kp END    &trans
 &trans  &trans  &trans      &kp C_VOL_DN  &kp C_VOL_UP  &kp LEFT  &kp DOWN       &kp UP       &kp RIGHT  &trans
@@ -266,7 +266,7 @@
         };
 
         sym_layer {
-            label = "Symbols";
+            display-name = "Symbols";
             bindings = <
 &kp MINUS      &kp EQUAL  &kp LEFT_PARENTHESIS  &kp RIGHT_PARENTHESIS  &kp GRAVE             &trans  &trans  &trans  &trans  &trans
 &kp AMPERSAND  &kp PIPE   &kp LEFT_BRACE        &kp RIGHT_BRACE        &kp TILDE             &trans  &trans  &trans  &trans  &trans
@@ -277,7 +277,7 @@
         };
 
         func_layer {
-            label = "Function Keys";
+            display-name = "Function Keys";
             bindings = <
 &kp F1   &kp F2   &kp F3  &kp F4  &kp F5   &trans  &trans  &trans  &trans  &trans
 &kp F6   &kp F7   &kp F8  &kp F9  &kp F10  &trans  &trans  &trans  &trans  &trans
@@ -309,7 +309,7 @@
          * All tog states are runtime-only — always off on power cycle (Qwerty Win default). */
 
         admin_layer {
-            label = "Admin";
+            display-name = "Admin";
             bindings = <
 &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_CLR  &trans  &trans  &trans  &trans  &trans
 &to 0         &tog 1        &trans        &trans        &trans      &trans  &trans  &trans  &trans  &trans
@@ -325,7 +325,7 @@
          * B's own hold is what keeps BOOTLOADER (layer 8) open from here on. */
 
         arm_layer {
-            label = "Arm";
+            display-name = "Arm";
             bindings = <
 &trans  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &trans
 &trans  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &trans
@@ -359,7 +359,7 @@
          * first, fully confirmed, before starting Q. */
 
         bootloader_layer {
-            label = "Bootloader";
+            display-name = "Bootloader";
             bindings = <
 &bootloader_hold 0 0  &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &bootloader_hold 0 0
 &trans            &trans  &trans  &trans  &trans        &trans  &trans  &trans  &trans  &trans

@@ -19,7 +19,6 @@
 
 	kscan0: kscan {
 		compatible = "zmk,kscan-gpio-matrix";
-		label = "KSCAN";
 		/* Lets a keypress wake the half from ZMK_SLEEP deep sleep. */
 		wakeup-source;
 
@@ -28,14 +27,12 @@
 
 	left_encoder: encoder_left {
 		compatible = "alps,ec11";
-		label = "LEFT_ENCODER";
 		resolution = <4>;
 		status = "disabled";
 	};
 
 	right_encoder: encoder_right {
 		compatible = "alps,ec11";
-		label = "RIGHT_ENCODER";
 		resolution = <4>;
 		status = "disabled";
 	};
@@ -54,7 +51,6 @@
 	oled: ssd1306@3c {
 		compatible = "solomon,ssd1306fb";
 		reg = <0x3c>;
-		label = "DISPLAY";
 		width = <128>;
 		height = <64>;
 		segment-offset = <0>;
