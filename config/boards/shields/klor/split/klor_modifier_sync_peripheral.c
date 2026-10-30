@@ -30,8 +30,8 @@ static ssize_t write_mod_state(struct bt_conn *conn, const struct bt_gatt_attr *
     return len;
 }
 
-BT_GATT_SERVICE_DEFINE(klor_mod_svc, BT_GATT_PRIMARY_SERVICE(&mod_svc_uuid),
-                       BT_GATT_CHARACTERISTIC(&mod_char_uuid,
+BT_GATT_SERVICE_DEFINE(klor_mod_svc, BT_GATT_PRIMARY_SERVICE(&mod_svc_uuid.uuid),
+                       BT_GATT_CHARACTERISTIC(&mod_char_uuid.uuid,
                                               BT_GATT_CHRC_WRITE_WITHOUT_RESP |
                                                   BT_GATT_CHRC_WRITE,
                                               BT_GATT_PERM_WRITE, NULL, write_mod_state, NULL), );
