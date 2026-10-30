@@ -28,12 +28,6 @@ if ZMK_DISPLAY
         bool
         default y
 
-    # Custom connection-driven blanking (klor_display_power.c) replaces this;
-    # leaving it enabled would un-blank the panel on the next keypress even
-    # while klor_display_power still considers the half connected.
-    config ZMK_DISPLAY_BLANK_ON_IDLE
-        default n
-
 endif # ZMK_DISPLAY
 
 config KLOR_DISPLAY_AUTO_OFF
