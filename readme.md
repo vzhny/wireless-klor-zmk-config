@@ -286,7 +286,8 @@ keeps updating normally — only row 3 changes:
 
 This is a one-way latch, not a live status — once either screen shows this,
 software never reverts it, even if the actual reboot never fires (e.g. you
-release before the 3-second mark, or the peripheral was unreachable). The
+the peripheral was unreachable). With plain `&bootloader` the half normally
+reboots before the 1-second warning, so seeing it means the reboot failed. The
 only way back to normal is power-cycling that half. See
 [BOOTLOADER SHORTCUT](#bootloader-shortcut) for why.
 
@@ -320,14 +321,12 @@ halves still paired, not after separating them.
    as long as it stays held (ZMK resolves `B`'s own binding once, at its
    press, from whichever layers were active at that instant — releasing
    Num/Nav afterward doesn't undo that).
-2. While still holding `B`, hold `P` for **3 seconds**. One second in, both
-   screens latch to a centered `BOOTLOADER` label (see the mockups above) —
-   that's your warning it's about to fire, not confirmation it already has.
-   At 3 seconds, the **right/peripheral** half reboots into bootloader mode.
+2. While still holding `B`, press `P`. The **right/peripheral** half
+   reboots into bootloader mode at once.
 3. Release `P` (keep holding `B`). Once you've confirmed the right half is
    actually in bootloader mode (e.g. it shows up as a `NICENANO` drive, or
-   you can otherwise tell it's no longer running as a keyboard), hold `Q`
-   for 3 seconds. The **left/central** half reboots into bootloader mode.
+   you can otherwise tell it's no longer running as a keyboard), press `Q`.
+   The **left/central** half reboots into bootloader mode.
 4. Flash each half normally (see HOW TO USE above) — order between the two
    doesn't matter once both are actually in bootloader mode.
 
@@ -337,19 +336,17 @@ right half has nothing left to resolve `P` through, and holding it
 afterward does nothing. There's no way to recover from doing this out of
 order except the physical reset button on the right half.
 
-**Never hold `P` and `Q` at the same time.** If both 3-second holds
-complete together, the left half's own reboot can cut its BLE radio before
+**Never press `P` and `Q` at the same time.** If both fire together, the left half's own reboot can cut its BLE radio before
 the "reboot yourself" message to the right half has actually finished
 sending over the air — leaving the right half un-rebooted with no
 indication why. Do them strictly one at a time, right fully first.
 
-**A quick tap of `B`, `P`, or `Q` does nothing** — `P`/`Q` both need the
-full 3-second hold before anything happens (short of that, they're
-`&none`), and letting go of `B` early just drops the Bootloader layer with
-no side effects. The one exception: once either screen's 1-second
-`BOOTLOADER` warning has shown, it's permanent for that half regardless of
-what happens next (see the Display mockups section above) — only a power
-cycle clears it, even if the reboot itself never actually fired.
+**The arm chord is the only guard** — `P`/`Q` fire on press once the
+Bootloader layer is open (plain `&bootloader`; the module's 3-second
+`&bootloader_hold` never fired on this hardware, 2026-10-30). Letting go of
+`B` drops the Bootloader layer with no side effects. If either screen ever
+shows the `BOOTLOADER` warning, the reboot did not fire; only a power cycle
+clears it.
 
 This exists because ZMK's `&bootloader` behavior has
 `locality = BEHAVIOR_LOCALITY_EVENT_SOURCE`: it reboots whichever physical
