@@ -143,7 +143,12 @@ re-bisecting object-by-object.
   `cp` often fails with `Device not configured` because the bootloader reboots
   before macOS finishes writing metadata; the flash usually still worked. Use
   `cp -X` (skips extended attributes) and chain with `;` instead of `&&` so the
-  wait loop still runs. No reset button on either half: double-tap RST to GND.
+  wait loop still runs. The `/Volumes/NICENANO` dir appears before it is
+  writable (`cp: Permission denied`), so when waiting for the mount, wait for
+  `INFO_UF2.TXT` plus `sleep 1`, not the dir:
+  `until [ -f /Volumes/NICENANO/INFO_UF2.TXT ]; do sleep 0.2; done; sleep 1; cp -X "$f" /Volumes/NICENANO/; while [ -d /Volumes/NICENANO ]; do sleep 0.2; done`.
+  No reset button on either half: double-tap RST to GND, or use the keymap's
+  Bootloader layer.
 - **CI build/module caching has been stale before** in this exact repo (traced
   once this session to `gh cache list`/`gh cache delete` fixing an "identical
   source, different binary" mystery). If a rebuild ever seems to ignore a real
